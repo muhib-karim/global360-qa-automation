@@ -78,13 +78,13 @@ jobs:
         id: test
         run: >-
           .github/scripts/retry-once.sh 'docker run --name "e2e-$ATTEMPT" snipeit-uitests; rc=$?;
-          mkdir -p "docker-results/attempt-$ATTEMPT";
-          docker cp "e2e-$ATTEMPT:/src/TestResults/." "docker-results/attempt-$ATTEMPT/";
-          docker cp "e2e-$ATTEMPT:/src/artifacts/." "docker-results/attempt-$ATTEMPT/";
+          mkdir -p "docker-results/TestResults/attempt-$ATTEMPT" "docker-results/artifacts/attempt-$ATTEMPT";
+          docker cp "e2e-$ATTEMPT:/src/TestResults/." "docker-results/TestResults/attempt-$ATTEMPT/";
+          docker cp "e2e-$ATTEMPT:/src/artifacts/." "docker-results/artifacts/attempt-$ATTEMPT/";
           exit $rc'
       - name: Job summary
         if: always()
-        run: python3 .github/scripts/summarize.py chromium "${{ steps.test.outputs.outcome }}" docker-results docker-results | tee -a "$GITHUB_STEP_SUMMARY"
+        run: python3 .github/scripts/summarize.py chromium "${{ steps.test.outputs.outcome }}" docker-results/TestResults docker-results/artifacts | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:

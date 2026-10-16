@@ -9,7 +9,8 @@ internal sealed record ApiAsset(string Tag, string Name, string Serial, string M
 
 /// <summary>
 /// Read-only Snipe-IT REST calls made with the signed-in browser session (the same cookie and CSRF token the UI's
-/// own tables use), so no personal access token is created on the shared demo.
+/// own tables use). The demo disables personal access tokens ("This feature has been disabled for the demo
+/// installation" on /account/api), and a token would be a write to the shared admin account anyway.
 /// </summary>
 internal sealed class SnipeItApi(IPage page, SnipeSettings settings)
 {
@@ -40,14 +41,6 @@ internal sealed class SnipeItApi(IPage page, SnipeSettings settings)
                 ? assigned.GetProperty("id").ToString()
                 : null)).ToArray();
         return (response.Status, assets);
-    }
-
-    // shortcut: temporary probe for the README's personal access token question, removed after one CI round.
-    public async Task<string> ProbeTokenPageAsync()
-    {
-        var response = await page.GotoAsync(new Uri(settings.BaseUrl, "/account/api").ToString());
-        var text = await page.Locator(".content-wrapper").InnerTextAsync();
-        return $"GET /account/api -> {response?.Status} {page.Url}; content: {text.ReplaceLineEndings(" | ")}";
     }
 
     // The API HTML-encodes text fields, for example Macbook Pro 13&quot;

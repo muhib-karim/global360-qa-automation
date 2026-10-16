@@ -62,8 +62,6 @@ public sealed class AssetLifecycleTests : SnipeItTest
             Assert.That(status, Is.EqualTo(200), "GET /api/v1/hardware status");
             Assert.That(found, Is.EqualTo(new[] { new ApiAsset(asset.Tag, asset.Name, asset.Serial, AssetData.Model, AssetData.Status, user.Id) }));
         }
-        var probe = await api.ProbeTokenPageAsync();
-        Logger.ApiProbed(probe);
 
         RunInfo["accessibility"] = audit.Summary;
         var newCritical = AxeAudit.NewCriticalRules(audit.Summary,

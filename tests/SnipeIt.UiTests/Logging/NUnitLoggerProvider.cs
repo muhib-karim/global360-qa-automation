@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace SnipeIt.UiTests.Logging;
 
-/// <summary>Writes one plain line per log entry to NUnit: live progress output and the test's own output (TRX, Allure).</summary>
+/// <summary>Writes one plain line per log entry to the test's output: console logger, TRX and Allure all show it.</summary>
 internal sealed class NUnitLoggerProvider : ILoggerProvider
 {
     public ILogger CreateLogger(string categoryName) => new NUnitLogger(categoryName);
@@ -27,7 +27,6 @@ internal sealed class NUnitLoggerProvider : ILoggerProvider
                 $"{DateTime.UtcNow:HH:mm:ss.fff} {logLevel,-11} {category}: {formatter(state, exception)}");
             if (exception is not null)
                 line += Environment.NewLine + exception;
-            TestContext.Progress.WriteLine(line);
             TestContext.Out.WriteLine(line);
         }
     }

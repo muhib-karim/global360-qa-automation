@@ -26,9 +26,6 @@ internal static partial class Log
         Message = "Accessibility {PageName}: {Violations} violated rules, critical rules [{CriticalRules}]")]
     public static partial void AxeScanned(this ILogger logger, string pageName, int violations, IEnumerable<string> criticalRules);
 
-    [LoggerMessage(EventId = 7, Level = LogLevel.Information, Message = "API probe: {Detail}")]
-    public static partial void ApiProbed(this ILogger logger, string detail);
-
     [LoggerMessage(EventId = 10, Level = LogLevel.Information,
         Message = "API cross-check: GET /api/v1/hardware?search={AssetTag} returned {Status} with rows [{Assets}]")]
     public static partial void ApiChecked(this ILogger logger, string assetTag, int status, IEnumerable<object> assets);
