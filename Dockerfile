@@ -1,4 +1,4 @@
-# Runs the E2E suite headless in a container: docker build -t snipeit-uitests . && docker run --rm snipeit-uitests
+# Runs the E2E suite headless in a container: docker build -t snipeit-uitests . && docker run --init --ipc=host --rm snipeit-uitests
 FROM mcr.microsoft.com/dotnet/sdk:10.0.402-noble
 
 ENV DOTNET_NOLOGO=1 \
@@ -23,6 +23,6 @@ RUN pwsh tests/SnipeIt.UiTests/bin/Release/net10.0/playwright.ps1 install chromi
 COPY --chown=app:app tests/ tests/
 RUN dotnet build --no-restore -c Release
 
-ENTRYPOINT ["dotnet", "test", "--no-build", "-c", "Release", "--filter", "TestCategory=E2E", \
+ENTRYPOINT ["dotnet", "test", "--no-build", "-c", "Release", "--filter", "TestCategory=E2E", "--blame-hang-timeout", "8m", \
     "--results-directory", "/src/TestResults", "--logger", "trx;LogFileName=e2e-docker.trx", \
     "--logger", "console;verbosity=normal"]
