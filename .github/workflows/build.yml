@@ -47,6 +47,16 @@ jobs:
             echo "::error::Build output or test artifacts are committed"; status=1
           fi
           exit $status
+      - name: Self-test the CI-level retry script
+        env:
+          PREFLIGHT: 'true'
+        run: |
+          GITHUB_OUTPUT=retry1 .github/scripts/retry-once.sh 'test "$ATTEMPT" = 2'
+          grep -qx 'outcome=passed-on-retry' retry1
+          if GITHUB_OUTPUT=retry2 .github/scripts/retry-once.sh 'false'; then exit 1; fi
+          grep -qx 'outcome=failed' retry2
+          GITHUB_OUTPUT=retry3 .github/scripts/retry-once.sh 'true'
+          grep -qx 'outcome=passed' retry3
 
   gitleaks:
     name: gitleaks

@@ -340,8 +340,9 @@ During a reset it answers HTTP 503 with a "Resetting the database" page.
   artifacts, and reports the outcome (`passed`, `passed-on-retry` or `failed`) in the job summary. A failure on
   the second attempt fails the job. Rationale: the demo is outside our control, so one rerun absorbs a reset or
   a network blip, while a repeatable failure still surfaces. A `passed-on-retry` result is a signal to
-  investigate, not a pass to ignore. Whether a run needed the retry is visible in its summary;
-  [docs/verification.md](docs/verification.md) records it for the cited runs.
+  investigate, not a pass to ignore. The build job self-tests the script's three outcomes on every pull request.
+  Whether a live run needed the retry is visible in its summary; [docs/verification.md](docs/verification.md)
+  records it for the cited runs.
 - **Timeouts, not sleeps.** Playwright waits up to 20 seconds per action or assertion (configurable),
   `--blame-hang-timeout 8m` stops a hung run with diagnostics, and each job has a timeout.
 
@@ -431,7 +432,8 @@ What CI enforces on every pull request (also in [CONTRIBUTING.md](CONTRIBUTING.m
 3. `dotnet format --verify-no-changes` against `.editorconfig`.
 4. Unit tests (`TestCategory=Unit`): settings precedence and host guard, unique data, axe baseline comparison.
 5. Guardrails: no `Thread.Sleep`, `WaitForTimeoutAsync` or `Force = true` in tests; no en or em dash characters
-   in the repository; no committed build output or test artifacts.
+   in the repository; no committed build output or test artifacts. The CI-level retry script is self-tested for
+   all three outcomes (`passed`, `passed-on-retry`, `failed`).
 6. E2E on chromium, firefox and webkit (one CI-level retry, reported), plus the merged Allure report.
 7. Docker image build and the E2E test inside it.
 8. gitleaks over the full git history.

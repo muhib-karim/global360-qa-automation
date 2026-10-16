@@ -13,7 +13,8 @@ CI enforces all of these on every pull request. A change is ready when every che
 3. **Formatting.** `dotnet format --verify-no-changes`. Run `dotnet format` before pushing.
 4. **Unit tests.** `dotnet test --filter TestCategory=Unit` (no browser, no network).
 5. **Guardrails.** No `Thread.Sleep`, `WaitForTimeoutAsync` or `Force = true` in tests; no en or em dash characters
-   anywhere (use commas, colons, parentheses or hyphens); no committed build output or test artifacts.
+   anywhere (use commas, colons, parentheses or hyphens); no committed build output or test artifacts; the
+   CI-level retry script passes its self-test.
 6. **E2E on chromium, firefox and webkit** against the public demo, plus the merged Allure report. A failed test
    step is re-run once by CI and reported as `passed-on-retry`; explain any retry in the pull request.
 7. **Docker.** The image builds and the E2E test passes inside it.

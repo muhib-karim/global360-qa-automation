@@ -8,8 +8,9 @@ artifacts (kept for 14 days, the Allure report for 30) are the evidence.
 
 Commit [`fdb894d`](https://github.com/muhib-karim/global360-qa-automation/commit/fdb894de2ce6e3e4969e8553db4cc667fc397507)
 on branch `hardening` (pull request [#6](https://github.com/muhib-karim/global360-qa-automation/pull/6)),
-16 October 2026 (UTC). Later commits on the branch only add these docs, the screenshots and a Docker console
-verbosity change; their own runs are on the pull request.
+16 October 2026 (UTC). Later commits on the branch only add these docs and screenshots, a Docker console
+verbosity change, and a self-test of the CI-level retry script (with a `PREFLIGHT` override used only by that
+self-test); their own runs are on the pull request.
 
 | Workflow | Run | Result |
 | --- | --- | --- |
