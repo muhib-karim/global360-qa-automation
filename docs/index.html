@@ -164,7 +164,7 @@ dotnet test --no-build --filter TestCategory=E2E</code></pre>
   <p>Use another engine with <code>BROWSER=firefox</code> or <code>BROWSER=webkit</code> (install it first), and watch it with <code>HEADED=1</code>.</p>
   <h3>Docker</h3>
   <pre><code>docker build -t snipeit-uitests .
-docker run --rm snipeit-uitests</code></pre>
+docker run --init --ipc=host --rm snipeit-uitests</code></pre>
   <h3>CI</h3>
   <p>GitHub Actions runs build and format checks, unit tests, the E2E matrix, the Docker run, gitleaks and CodeQL on every pull request. The E2E workflow also runs nightly and on demand, and publishes this page with the latest report from <code>main</code>.</p>
 
