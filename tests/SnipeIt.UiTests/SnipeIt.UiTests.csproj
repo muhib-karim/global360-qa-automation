@@ -27,4 +27,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.json;accessibility-baseline.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -6,3 +6,8 @@ artifacts/
 .idea/
 .env
 *.user
+**/allure-results/
+allure-report/
+*.trx
+trace.zip
+*.webm

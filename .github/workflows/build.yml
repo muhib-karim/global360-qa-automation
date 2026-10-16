@@ -13,8 +13,13 @@ concurrency:
   group: build-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
 jobs:
   build:
+    name: build-and-format
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -27,3 +32,18 @@ jobs:
       - run: dotnet restore --locked-mode
       - run: dotnet build --no-restore --configuration Release
       - run: dotnet format --verify-no-changes --no-restore
+      - name: Unit tests (no browser, no network)
+        run: dotnet test --no-build --configuration Release --filter TestCategory=Unit --logger "console;verbosity=normal"
+      - name: Guardrails
+        run: |
+          status=0
+          if git grep -n -e "$(printf '\xe2\x80\x93')" -e "$(printf '\xe2\x80\x94')"; then
+            echo "::error::En or em dash found (use commas, colons, parentheses or hyphens)"; status=1
+          fi
+          if git grep -nE 'Thread\.Sleep|WaitForTimeoutAsync|Force = true' -- tests/; then
+            echo "::error::Fixed sleeps or forced clicks are not allowed"; status=1
+          fi
+          if git ls-files | grep -E '(^|/)(bin|obj|TestResults|artifacts|allure-results|allure-report)/|\.(trx|webm)$|trace\.zip$'; then
+            echo "::error::Build output or test artifacts are committed"; status=1
+          fi
+          exit $status
