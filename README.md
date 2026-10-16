@@ -155,8 +155,8 @@ already present. No credentials need to be configured: the defaults are the demo
   silently shift assertions.
 - **Locators.** Accessible roles and labels first (`GetByRole`, `GetByLabel`). Stable IDs where the demo's labels
   are not associated with their inputs, or where tab labels are icons with counts.
-- **Web-first assertions only.** Every check is an `Expect(...)` assertion that waits for the condition.
-  There are no fixed sleeps, `WaitForTimeout` calls or forced clicks; CI fails the build if one appears.
+- **Web-first assertions only.** Every UI check is an `Expect(...)` assertion that waits for the condition.
+  There are no fixed sleeps (`Thread.Sleep`, `Task.Delay`), `WaitForTimeout` calls or forced clicks; CI fails the build if one appears.
 - **Fresh context per test, unique data per run.** No state is shared between tests, so the design is
   parallel-safe. In CI the three browser jobs create their own assets on the demo at the same time.
 - **Configuration.** `appsettings.json` with environment variable overrides (Microsoft.Extensions.Configuration).
@@ -252,7 +252,7 @@ In PowerShell set variables with `$env:BROWSER = "firefox"` first. To view a tra
 
 ```sh
 docker build -t snipeit-uitests .
-docker run --name snipeit-e2e snipeit-uitests
+docker run --init --ipc=host --name snipeit-e2e snipeit-uitests
 docker cp snipeit-e2e:/src/TestResults ./TestResults      # TRX
 docker cp snipeit-e2e:/src/artifacts ./artifacts          # run.json, axe results, screenshots
 ```
