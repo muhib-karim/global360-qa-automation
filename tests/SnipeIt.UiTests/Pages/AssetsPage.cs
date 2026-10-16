@@ -22,6 +22,8 @@ internal sealed class AssetsPage(IPage page, SnipeSettings settings)
     {
         var row = _table.RowsWith(asset.Tag);
         await Expect(row).ToHaveCountAsync(1);
+        // The search must actually filter: our asset is the only row, not one row among the full listing.
+        await Expect(_table.Rows).ToHaveCountAsync(1);
         await Expect(row).ToContainTextAsync(asset.Name);
         await Expect(row).ToContainTextAsync(asset.Serial);
         await Expect(row).ToContainTextAsync(AssetData.Model);
