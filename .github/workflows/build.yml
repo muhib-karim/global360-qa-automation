@@ -40,7 +40,7 @@ jobs:
           if git grep -n -e "$(printf '\xe2\x80\x93')" -e "$(printf '\xe2\x80\x94')"; then
             echo "::error::En or em dash found (use commas, colons, parentheses or hyphens)"; status=1
           fi
-          if git grep -nE 'Thread\.Sleep|WaitForTimeoutAsync|Force = true' -- tests/; then
+          if git grep -nE 'Thread\.Sleep|Task\.Delay|WaitForTimeoutAsync|Force = true' -- tests/; then
             echo "::error::Fixed sleeps or forced clicks are not allowed"; status=1
           fi
           if git ls-files | grep -E '(^|/)(bin|obj|TestResults|artifacts|allure-results|allure-report)/|\.(trx|webm)$|trace\.zip$'; then
@@ -87,13 +87,14 @@ jobs:
       - name: Run the E2E test in the container (one CI-level retry on failure)
         id: test
         run: >-
-          .github/scripts/retry-once.sh 'docker run --name "e2e-$ATTEMPT" snipeit-uitests; rc=$?;
+          .github/scripts/retry-once.sh 'docker run --init --ipc=host --name "e2e-$ATTEMPT" snipeit-uitests; rc=$?;
           mkdir -p "docker-results/TestResults/attempt-$ATTEMPT" "docker-results/artifacts/attempt-$ATTEMPT";
           docker cp "e2e-$ATTEMPT:/src/TestResults/." "docker-results/TestResults/attempt-$ATTEMPT/";
           docker cp "e2e-$ATTEMPT:/src/artifacts/." "docker-results/artifacts/attempt-$ATTEMPT/";
           exit $rc'
       - name: Job summary
         if: always()
+        shell: bash # pipefail, so the summary's exit code is not lost in the pipe to tee
         run: python3 .github/scripts/summarize.py chromium "${{ steps.test.outputs.outcome }}" docker-results/TestResults docker-results/artifacts | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
