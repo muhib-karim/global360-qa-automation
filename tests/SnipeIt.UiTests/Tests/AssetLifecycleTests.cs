@@ -1,80 +1,73 @@
-using Microsoft.Playwright;
-using Microsoft.Playwright.NUnit;
-using NUnit.Framework.Interfaces;
+using SnipeIt.UiTests.Accessibility;
+using SnipeIt.UiTests.Api;
+using SnipeIt.UiTests.Data;
+using SnipeIt.UiTests.Fixtures;
+using SnipeIt.UiTests.Logging;
 using SnipeIt.UiTests.Pages;
-using SnipeIt.UiTests.Support;
 
 namespace SnipeIt.UiTests.Tests;
 
 [TestFixture]
-[NonParallelizable]
-public sealed class AssetLifecycleTests : PageTest
+[Category("E2E")]
+[Parallelizable(ParallelScope.Self)]
+public sealed class AssetLifecycleTests : SnipeItTest
 {
-    private string _artifacts = null!;
-
-    public override BrowserNewContextOptions ContextOptions() => new()
-    {
-        ViewportSize = new() { Width = 1440, Height = 1000 },
-        Locale = "en-US"
-    };
-
-    [SetUp]
-    public async Task StartDiagnostics()
-    {
-        Page.SetDefaultTimeout(20_000);
-        Assertions.SetDefaultExpectTimeout(20_000);
-        _artifacts = Path.GetFullPath(Path.Combine(TestContext.CurrentContext.WorkDirectory,
-            "artifacts", $"{DateTime.UtcNow:yyyyMMddTHHmmss}-{Guid.NewGuid():N}"));
-        Directory.CreateDirectory(_artifacts);
-        await Context.Tracing.StartAsync(new() { Screenshots = true, Snapshots = true, Sources = true });
-    }
-
     [Test]
     public async Task Macbook_can_be_created_checked_out_found_and_audited()
     {
-        var settings = TestSettings.FromEnvironment();
-        var asset = AssetData.Unique();
-        TestContext.Progress.WriteLine($"Asset tag: {asset.Tag}; random user seed: {settings.UserSeed}");
-        var actor = await new LoginPage(Page, settings).SignInAsync();
-        var create = new CreateAssetPage(Page, settings);
-        await create.OpenAsync();
-        var user = await create.CreateAndCheckOutAsync(asset);
-        TestContext.Progress.WriteLine($"Selected demo user: {user.OptionText}; ID: {user.Id}");
-        await new AssetsPage(Page, settings).FindAndOpenAsync(asset, user);
-        var details = new AssetDetailsPage(Page);
-        await details.VerifyDetailsAsync(asset, user);
-        await Page.ScreenshotAsync(new() { Path = Path.Combine(_artifacts, "asset-details.png"), FullPage = true });
-        await details.VerifyHistoryAsync(asset, user, actor);
-        await Page.ScreenshotAsync(new() { Path = Path.Combine(_artifacts, "asset-history.png"), FullPage = true });
-        await File.WriteAllTextAsync(Path.Combine(_artifacts, "run.json"),
-            System.Text.Json.JsonSerializer.Serialize(new
-            {
-                asset.Tag,
-                asset.Name,
-                asset.Serial,
-                asset.Notes,
-                Model = AssetData.Model,
-                Status = AssetData.Status,
-                User = user,
-                Actor = actor,
-                settings.UserSeed,
-                Url = Page.Url,
-                VerifiedAtUtc = DateTime.UtcNow
-            }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
-        TestContext.Progress.WriteLine($"Verified asset: {Page.Url}");
-    }
+        var seed = Settings.Snipe.UserSeed ?? Random.Shared.Next();
+        var asset = new AssetDataBuilder().Build();
+        RunInfo["assetTag"] = asset.Tag;
+        RunInfo["userSeed"] = seed;
+        Logger.AssetPrepared(asset.Tag, asset.Name, asset.Serial, seed);
+        var audit = new AxeAudit(Page, ArtifactsDir, Logger);
 
-    [TearDown]
-    public async Task SaveDiagnostics()
-    {
-        if (TestContext.CurrentContext.Result.Outcome.Status == TestStatus.Failed)
+        var login = new LoginPage(Page, Settings.Snipe);
+        await StepAsync("Open the login page", login.OpenAsync);
+        await audit.ScanAsync("login");
+        var actor = await StepAsync("Sign in with the public demo admin", login.SignInAsync);
+        RunInfo["actor"] = actor;
+
+        var create = new CreateAssetPage(Page, Settings.Snipe);
+        await StepAsync("Open the create asset form", create.OpenAsync);
+        await audit.ScanAsync("create-asset");
+        var user = await StepAsync("Create a Ready to Deploy Macbook Pro 13\" checked out to a random user",
+            () => create.CreateAndCheckOutAsync(asset, new Random(seed)));
+        RunInfo["user"] = user;
+        Logger.UserSelected(user.DisplayName, user.Id, user.OptionText);
+
+        var assets = new AssetsPage(Page, Settings.Snipe);
+        await StepAsync("Search the assets list by the unique tag", () => assets.SearchAsync(asset.Tag));
+        await StepAsync("Verify the asset row", () => assets.VerifyRowAsync(asset, user));
+        await audit.ScanAsync("assets-list");
+        await EvidenceAsync("1-assets-list");
+        await StepAsync("Open the asset page from the list", () => assets.OpenAsync(asset));
+
+        var details = new AssetDetailsPage(Page);
+        await StepAsync("Verify the asset details", () => details.VerifyDetailsAsync(asset, user));
+        await audit.ScanAsync("asset-page");
+        await EvidenceAsync("2-asset-details");
+        await StepAsync("Open the History tab", details.OpenHistoryAsync);
+        await StepAsync("Verify the History rows", () => details.VerifyHistoryAsync(asset, user, actor));
+        await EvidenceAsync("3-asset-history");
+        Logger.AssetVerified(Page.Url);
+
+        var api = new SnipeItApi(Page, Settings.Snipe);
+        var (status, found) = await StepAsync("Cross-check the asset through the REST API (read-only)",
+            () => api.FindAssetsAsync(asset.Tag));
+        Logger.ApiChecked(asset.Tag, status, found);
+        RunInfo["apiStatus"] = status;
+        using (Assert.EnterMultipleScope())
         {
-            await File.WriteAllTextAsync(Path.Combine(_artifacts, "failure.html"), await Page.ContentAsync());
-            await Page.ScreenshotAsync(new() { Path = Path.Combine(_artifacts, "failure.png"), FullPage = true });
+            Assert.That(status, Is.EqualTo(200), "GET /api/v1/hardware status");
+            Assert.That(found, Is.EqualTo(new[] { new ApiAsset(asset.Tag, asset.Name, asset.Serial, AssetData.Model, AssetData.Status, user.Id) }));
         }
-        var trace = Path.Combine(_artifacts, "trace.zip");
-        await Context.Tracing.StopAsync(new() { Path = trace });
-        TestContext.AddTestAttachment(trace, "Playwright trace");
-        TestContext.Progress.WriteLine($"Artifacts: {_artifacts}");
+
+        RunInfo["accessibility"] = audit.Summary;
+        var newCritical = AxeAudit.NewCriticalRules(audit.Summary,
+            AxeAudit.LoadBaseline(Path.Join(AppContext.BaseDirectory, "accessibility-baseline.json")));
+        RunInfo["accessibilityNewCritical"] = newCritical;
+        if (Settings.Accessibility.Enforce)
+            Assert.That(newCritical, Is.Empty, "Critical accessibility rules not in accessibility-baseline.json");
     }
 }

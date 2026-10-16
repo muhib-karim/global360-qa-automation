@@ -1,11 +1,14 @@
 using Microsoft.Playwright;
 using static Microsoft.Playwright.Assertions;
 
-namespace SnipeIt.UiTests.Pages;
+namespace SnipeIt.UiTests.Components;
 
+/// <summary>The demo's Select2 dropdowns, addressed by the id of the hidden native select.</summary>
 internal sealed class Select2(IPage page, string selectId)
 {
     private ILocator Options => page.Locator(".select2-results__option[role='option'][aria-selected]");
+
+    public ILocator SelectedOption => page.Locator($"#{selectId} option:checked");
 
     public Task OpenAsync() => page.Locator($"#select2-{selectId}-container").ClickAsync();
 

@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
 using Microsoft.Playwright;
-using SnipeIt.UiTests.Support;
+using SnipeIt.UiTests.Components;
+using SnipeIt.UiTests.Data;
 using static Microsoft.Playwright.Assertions;
 
 namespace SnipeIt.UiTests.Pages;
 
-internal sealed class AssetDetailsPage(IPage page)
+internal sealed partial class AssetDetailsPage(IPage page)
 {
     public async Task VerifyDetailsAsync(AssetData asset, SelectedUser user)
     {
@@ -21,23 +22,18 @@ internal sealed class AssetDetailsPage(IPage page)
             .ToHaveTextAsync(user.DisplayName);
     }
 
-    public async Task VerifyHistoryAsync(AssetData asset, SelectedUser user, string actor)
+    public async Task OpenHistoryAsync()
     {
         await page.Locator("a[href='#history']").ClickAsync();
         await Expect(page.Locator("#history")).ToBeVisibleAsync();
-        var table = page.Locator("#assetHistoryListingTable");
-        var rows = table.Locator("tbody tr");
-        await Expect(rows).ToHaveCountAsync(2);
-        var created = rows.Filter(new()
-        {
-            Has = page.GetByRole(AriaRole.Cell,
-            new() { Name = "create new", Exact = true })
-        });
-        var checkout = rows.Filter(new()
-        {
-            Has = page.GetByRole(AriaRole.Cell,
-            new() { Name = "checkout", Exact = true })
-        });
+    }
+
+    public async Task VerifyHistoryAsync(AssetData asset, SelectedUser user, string actor)
+    {
+        var table = new BootstrapTable(page.Locator("#assetHistoryListingTable"));
+        await Expect(table.Rows).ToHaveCountAsync(2);
+        var created = RowWithAction(table, "create new");
+        var checkout = RowWithAction(table, "checkout");
         await Expect(created).ToHaveCountAsync(1);
         await Expect(checkout).ToHaveCountAsync(1);
         var assetPath = new Uri(page.Url).AbsolutePath;
@@ -47,17 +43,19 @@ internal sealed class AssetDetailsPage(IPage page)
             await Expect(item).ToContainTextAsync(asset.Tag);
             await Expect(item).ToContainTextAsync(asset.Name);
             await Expect(item).ToContainTextAsync(AssetData.Model);
-            await Expect(await CellAsync(table, row, "created_by")).ToHaveTextAsync(actor);
-            await Expect(await CellAsync(table, row, "created_at")).ToHaveTextAsync(
-                new Regex(@"\w{3} \w{3} \d{1,2}, \d{4} \d{1,2}:\d{2}[AP]M"));
-            await Expect(await CellAsync(table, row, "quantity")).ToHaveTextAsync("1");
+            await Expect(await table.CellAsync(row, "created_by")).ToHaveTextAsync(actor);
+            await Expect(await table.CellAsync(row, "created_at")).ToHaveTextAsync(HistoryDate());
+            await Expect(await table.CellAsync(row, "quantity")).ToHaveTextAsync("1");
         }
-        await Expect(await CellAsync(table, created, "target")).ToBeEmptyAsync();
-        await Expect((await CellAsync(table, checkout, "target"))
+        await Expect(await table.CellAsync(created, "target")).ToBeEmptyAsync();
+        await Expect((await table.CellAsync(checkout, "target"))
             .Locator($"a[href$='/users/{user.Id}']")).ToHaveTextAsync(user.DisplayName);
-        await Expect(await CellAsync(table, checkout, "note"))
+        await Expect(await table.CellAsync(checkout, "note"))
             .ToHaveTextAsync("Checked out on asset creation");
     }
+
+    private ILocator RowWithAction(BootstrapTable table, string action) =>
+        table.Rows.Filter(new() { Has = page.GetByRole(AriaRole.Cell, new() { Name = action, Exact = true }) });
 
     private async Task VerifyValueAsync(string selector, string expected)
     {
@@ -66,13 +64,7 @@ internal sealed class AssetDetailsPage(IPage page)
         await Expect(value).ToHaveTextAsync(expected);
     }
 
-    private static async Task<ILocator> CellAsync(ILocator table, ILocator row, string field)
-    {
-        var fields = await table.Locator("thead th").EvaluateAllAsync<string[]>(
-            "headers => headers.map(h => h.getAttribute('data-field'))");
-        var column = Array.IndexOf(fields, field);
-        if (column < 0)
-            throw new InvalidOperationException($"History column '{field}' is missing.");
-        return row.Locator("td").Nth(column);
-    }
+    // For example "Fri Oct 16, 2026 2:04AM" with the demo's default date settings.
+    [GeneratedRegex(@"\w{3} \w{3} \d{1,2}, \d{4} \d{1,2}:\d{2}[AP]M")]
+    private static partial Regex HistoryDate();
 }
