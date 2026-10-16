@@ -32,7 +32,7 @@ internal sealed class AxeAudit(IPage page, string outputDir, ILogger logger)
             v.HelpUrl,
             Nodes = v.Nodes.Select(n => n.Html).ToArray(),
         }).ToArray();
-        await File.WriteAllTextAsync(Path.Combine(outputDir, $"axe-{pageName}.json"),
+        await File.WriteAllTextAsync(Path.Join(outputDir, $"axe-{pageName}.json"),
             JsonSerializer.Serialize(new { Page = pageName, page.Url, Violations = violations }, Json));
         var critical = violations.Where(v => v.Impact == "critical").Select(v => v.Id).Order(StringComparer.Ordinal).ToArray();
         var byImpact = violations.GroupBy(v => v.Impact ?? "unknown")
@@ -41,7 +41,7 @@ internal sealed class AxeAudit(IPage page, string outputDir, ILogger logger)
         logger.AxeScanned(pageName, violations.Length, critical);
     }
 
-    /// <returns>Per page, the critical rules that are not in the baseline. Empty when nothing new appeared.</returns>
+    /// <summary>Per page, the critical rules that are not in the baseline. Empty when nothing new appeared.</summary>
     public static Dictionary<string, string[]> NewCriticalRules(
         IReadOnlyDictionary<string, AxePageSummary> found, IReadOnlyDictionary<string, string[]> baseline) =>
         found.Select(p => (p.Key, New: p.Value.CriticalRules.Except(baseline.GetValueOrDefault(p.Key, []), StringComparer.Ordinal).ToArray()))

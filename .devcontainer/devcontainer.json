@@ -1,0 +1,13 @@
+{
+  "name": "Snipe-IT UI tests (.NET 10 + Playwright)",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:2-10.0-noble",
+  "features": {
+    "ghcr.io/devcontainers/features/powershell:1": {}
+  },
+  "postCreateCommand": "dotnet restore --locked-mode && dotnet build --no-restore && pwsh tests/SnipeIt.UiTests/bin/Debug/net10.0/playwright.ps1 install --with-deps chromium",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-dotnettools.csdevkit", "editorconfig.editorconfig"]
+    }
+  }
+}

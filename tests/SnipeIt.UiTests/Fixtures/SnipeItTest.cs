@@ -20,7 +20,9 @@ public abstract class SnipeItTest : BrowserTest
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
-    private ILoggerFactory? _loggerFactory;
+    // The provider writes to the current test's output when called, so one factory serves every test.
+    private static readonly ILoggerFactory Logs = LoggerFactory.Create(builder => builder.AddProvider(new NUnitLoggerProvider()));
+
     private DateTime _startedUtc;
 
     private protected TestSettings Settings { get; private set; } = null!;
@@ -37,12 +39,11 @@ public abstract class SnipeItTest : BrowserTest
     {
         _startedUtc = DateTime.UtcNow;
         Settings = TestSettings.Load();
-        _loggerFactory = LoggerFactory.Create(builder => builder.AddProvider(new NUnitLoggerProvider()));
-        Logger = _loggerFactory.CreateLogger(GetType().Name);
+        Logger = Logs.CreateLogger(GetType().Name);
         RunInfo = new() { ["browser"] = BrowserName, ["browserVersion"] = Browser.Version };
         var root = Settings.Diagnostics.OutputDir
-                   ?? Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts");
-        ArtifactsDir = Path.GetFullPath(Path.Combine(root, string.Create(CultureInfo.InvariantCulture,
+                   ?? Path.Join(TestContext.CurrentContext.WorkDirectory, "artifacts");
+        ArtifactsDir = Path.GetFullPath(Path.Join(root, string.Create(CultureInfo.InvariantCulture,
             $"{BrowserName}-{TestContext.CurrentContext.Test.MethodName}-{_startedUtc:yyyyMMddTHHmmss}")));
         Directory.CreateDirectory(ArtifactsDir);
 
@@ -50,7 +51,7 @@ public abstract class SnipeItTest : BrowserTest
         {
             ViewportSize = new() { Width = 1440, Height = 1000 },
             Locale = "en-US",
-            RecordVideoDir = Settings.Diagnostics.Video == ArtifactMode.Off ? null : Path.Combine(ArtifactsDir, "video"),
+            RecordVideoDir = Settings.Diagnostics.Video == ArtifactMode.Off ? null : Path.Join(ArtifactsDir, "video"),
         });
         Context.SetDefaultTimeout(Settings.Snipe.TimeoutMs);
         Assertions.SetDefaultExpectTimeout(Settings.Snipe.TimeoutMs);
@@ -64,7 +65,7 @@ public abstract class SnipeItTest : BrowserTest
             result.name = $"{result.name} [{BrowserName}]";
             result.historyId = $"{result.fullName}[{BrowserName}]";
         });
-        AllureApi.AddTestParameter("browser", BrowserName);
+        AllureApi.AddTestParameter(new Parameter { name = "browser", value = BrowserName });
         Logger.RunStarted(BrowserName, Browser.Version, Settings.Snipe.BaseUrl);
     }
 
@@ -73,39 +74,32 @@ public abstract class SnipeItTest : BrowserTest
     {
         var outcome = TestContext.CurrentContext.Result.Outcome.Status;
         var failed = outcome == TestStatus.Failed;
-        try
+        if (failed)
         {
-            if (failed)
-            {
-                await TryAsync("failure screenshot", () =>
-                    Page.ScreenshotAsync(new() { Path = Path.Combine(ArtifactsDir, "failure.png"), FullPage = true }));
-                await TryAsync("failure HTML", async () =>
-                    await File.WriteAllTextAsync(Path.Combine(ArtifactsDir, "failure.html"), await Page.ContentAsync()));
-            }
-            if (Keep(Settings.Diagnostics.Trace, failed))
-                await TryAsync("trace", () => Context.Tracing.StopAsync(new() { Path = Path.Combine(ArtifactsDir, "trace.zip") }));
-            RunInfo["outcome"] = outcome.ToString();
-            RunInfo["url"] = Page.Url;
-            RunInfo["durationSeconds"] = Math.Round((DateTime.UtcNow - _startedUtc).TotalSeconds, 1);
-            await File.WriteAllTextAsync(Path.Combine(ArtifactsDir, "run.json"), JsonSerializer.Serialize(RunInfo, Json));
-
-            // The video file is complete only after the context closes.
-            await TryAsync("browser context", () => Context.CloseAsync());
-            var videoDir = Path.Combine(ArtifactsDir, "video");
-            if (!Keep(Settings.Diagnostics.Video, failed) && Directory.Exists(videoDir))
-                Directory.Delete(videoDir, recursive: true);
-
-            foreach (var file in Directory.EnumerateFiles(ArtifactsDir, "*", SearchOption.AllDirectories))
-            {
-                TestContext.AddTestAttachment(file);
-                AllureApi.AddAttachment(file);
-            }
-            Logger.ArtifactsSaved(outcome, ArtifactsDir);
+            await TryAsync("failure screenshot", () =>
+                Page.ScreenshotAsync(new() { Path = Path.Join(ArtifactsDir, "failure.png"), FullPage = true }));
+            await TryAsync("failure HTML", async () =>
+                await File.WriteAllTextAsync(Path.Join(ArtifactsDir, "failure.html"), await Page.ContentAsync()));
         }
-        finally
+        if (Keep(Settings.Diagnostics.Trace, failed))
+            await TryAsync("trace", () => Context.Tracing.StopAsync(new() { Path = Path.Join(ArtifactsDir, "trace.zip") }));
+        RunInfo["outcome"] = outcome.ToString();
+        RunInfo["url"] = Page.Url;
+        RunInfo["durationSeconds"] = Math.Round((DateTime.UtcNow - _startedUtc).TotalSeconds, 1);
+        await File.WriteAllTextAsync(Path.Join(ArtifactsDir, "run.json"), JsonSerializer.Serialize(RunInfo, Json));
+
+        // The video file is complete only after the context closes.
+        await TryAsync("browser context", () => Context.CloseAsync());
+        var videoDir = Path.Join(ArtifactsDir, "video");
+        if (!Keep(Settings.Diagnostics.Video, failed) && Directory.Exists(videoDir))
+            Directory.Delete(videoDir, recursive: true);
+
+        foreach (var file in Directory.EnumerateFiles(ArtifactsDir, "*", SearchOption.AllDirectories))
         {
-            _loggerFactory?.Dispose();
+            TestContext.AddTestAttachment(file);
+            AllureApi.AddAttachment(file);
         }
+        Logger.ArtifactsSaved(outcome, ArtifactsDir);
     }
 
     /// <summary>Logs the step and records it as an Allure step.</summary>
@@ -123,7 +117,7 @@ public abstract class SnipeItTest : BrowserTest
 
     /// <summary>Small viewport JPEG kept as evidence of a verified page.</summary>
     private protected Task EvidenceAsync(string name) =>
-        Page.ScreenshotAsync(new() { Path = Path.Combine(ArtifactsDir, $"{name}.jpg"), Type = ScreenshotType.Jpeg, Quality = 70 });
+        Page.ScreenshotAsync(new() { Path = Path.Join(ArtifactsDir, $"{name}.jpg"), Type = ScreenshotType.Jpeg, Quality = 70 });
 
     private static bool Keep(ArtifactMode mode, bool failed) =>
         mode == ArtifactMode.On || (mode == ArtifactMode.RetainOnFailure && failed);

@@ -65,7 +65,7 @@ public sealed class AssetLifecycleTests : SnipeItTest
 
         RunInfo["accessibility"] = audit.Summary;
         var newCritical = AxeAudit.NewCriticalRules(audit.Summary,
-            AxeAudit.LoadBaseline(Path.Combine(AppContext.BaseDirectory, "accessibility-baseline.json")));
+            AxeAudit.LoadBaseline(Path.Join(AppContext.BaseDirectory, "accessibility-baseline.json")));
         RunInfo["accessibilityNewCritical"] = newCritical;
         if (Settings.Accessibility.Enforce)
             Assert.That(newCritical, Is.Empty, "Critical accessibility rules not in accessibility-baseline.json");
