@@ -20,9 +20,6 @@ public abstract class SnipeItTest : BrowserTest
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
-    // The provider writes to the current test's output when called, so one factory serves every test.
-    private static readonly ILoggerFactory Logs = LoggerFactory.Create(builder => builder.AddProvider(new NUnitLoggerProvider()));
-
     private DateTime _startedUtc;
 
     private protected TestSettings Settings { get; private set; } = null!;
@@ -39,7 +36,7 @@ public abstract class SnipeItTest : BrowserTest
     {
         _startedUtc = DateTime.UtcNow;
         Settings = TestSettings.Load();
-        Logger = Logs.CreateLogger(GetType().Name);
+        Logger = NUnitLoggerProvider.Factory.CreateLogger(GetType().Name);
         RunInfo = new() { ["browser"] = BrowserName, ["browserVersion"] = Browser.Version };
         var root = Settings.Diagnostics.OutputDir
                    ?? Path.Join(TestContext.CurrentContext.WorkDirectory, "artifacts");

@@ -6,6 +6,9 @@ namespace SnipeIt.UiTests.Logging;
 /// <summary>Writes one plain line per log entry to the test's output: console logger, TRX and Allure all show it.</summary>
 internal sealed class NUnitLoggerProvider : ILoggerProvider
 {
+    /// <summary>One factory for all tests: the provider resolves the current test's output on every call.</summary>
+    public static ILoggerFactory Factory { get; } = LoggerFactory.Create(builder => builder.AddProvider(new NUnitLoggerProvider()));
+
     public ILogger CreateLogger(string categoryName) => new NUnitLogger(categoryName);
 
     public void Dispose()
