@@ -8,6 +8,10 @@ updates:
     groups:
       microsoft-extensions:
         patterns: ["Microsoft.Extensions.*"]
+    ignore:
+      # NUnit 5 waits until Allure.NUnit and Microsoft.Playwright.NUnit state support for it (README, Next steps).
+      - dependency-name: "NUnit"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
