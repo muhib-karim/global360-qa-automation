@@ -277,9 +277,8 @@ Containers extension and run the Quick start `dotnet test` command. The dev cont
 
 All workflows use read-only `contents` permission by default, concurrency groups, timeouts and actions pinned by
 commit SHA. Only the Pages job gets `pages: write` and `id-token: write`, and it runs only for `main` (push,
-schedule or manual run), never for pull requests. GitHub runs scheduled workflows from the default branch only,
-so the nightly run and the [Pages site](https://muhib-karim.github.io/global360-qa-automation/) start working
-once this branch is merged.
+schedule or manual run), never for pull requests. The nightly run and the
+[Pages site](https://muhib-karim.github.io/global360-qa-automation/) run from `main`.
 
 ## The test flow step by step
 
@@ -374,8 +373,8 @@ job's summary fails if the browser that actually ran differs from the matrix ent
   job adds the Allure totals.
 - **Allure** is the main HTML report (Allure.NUnit 2.15.0 and Allure CLI 2.46.1). Each browser appears as its own
   test with a `browser` parameter. To open the downloaded artifact, serve it over HTTP, for example
-  `python3 -m http.server -d allure-report` or `allure open allure-report`. After merge, the latest report from
-  `main` is published at [/report/](https://muhib-karim.github.io/global360-qa-automation/report/).
+  `python3 -m http.server -d allure-report` or `allure open allure-report`. The latest report from `main` is
+  published at [/report/](https://muhib-karim.github.io/global360-qa-automation/report/).
 - **TRX** is produced by the VSTest TRX logger and can be opened in Visual Studio or any TRX viewer.
   Playwright for .NET has no built-in HTML reporter; the `.html` file is the VSTest HTML logger.
 - **Locally**, artifacts go to `tests/SnipeIt.UiTests/bin/<Configuration>/net10.0/artifacts/` and Allure results to
@@ -463,7 +462,6 @@ Dependabot proposes weekly NuGet, GitHub Actions and Docker updates; they go thr
   shown in the user menu; a change to the demo's date settings would need the pattern updated.
 - The accessibility gate only fails on new critical rules; other levels are recorded only.
 - The dev container is provided but not exercised in CI.
-- The nightly schedule and the GitHub Pages site run from `main` only, so they start after this work is merged.
 - The Allure report does not keep history between runs yet.
 
 ## Next steps
