@@ -62,8 +62,8 @@ jobs:
         run: |
           command -v ffmpeg || { sudo apt-get update -q && sudo apt-get install -y -q ffmpeg; }
           mkdir -p media
-          # Only the newest passing run, never a failed first attempt that happens to be longer.
-          run_dir=$(python3 -c 'import glob, json, os; r = sorted(p for p in glob.glob("artifacts/*/run.json") if json.load(open(p)).get("outcome") == "Passed"); print(os.path.dirname(r[-1]) if r else "")')
+          # Only the newest passing lifecycle run, never a failed first attempt that happens to be longer.
+          run_dir=$(python3 -c 'import glob, json, os; r = sorted(p for p in glob.glob("artifacts/*Macbook_can_be_created*/run.json") if json.load(open(p)).get("outcome") == "Passed"); print(os.path.dirname(r[-1]) if r else "")')
           [ -n "$run_dir" ] || { echo "::error::No passing run.json found under artifacts/"; exit 1; }
           video=$(find "$run_dir" -name '*.webm' -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
           ffmpeg -loglevel error -y -i "$video" \
