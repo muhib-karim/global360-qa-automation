@@ -36,4 +36,11 @@ internal sealed class AssetsPage(IPage page, SnipeSettings settings)
         await _table.RowsWith(asset.Tag).GetByRole(AriaRole.Link, new() { Name = asset.Tag, Exact = true }).ClickAsync();
         await Expect(page.GetByRole(AriaRole.Heading).Filter(new() { HasText = asset.Tag })).ToBeVisibleAsync();
     }
+
+    /// <summary>After a delete: the search for the tag finds nothing, and the table says so.</summary>
+    public async Task VerifyMissingAsync(AssetData asset)
+    {
+        await Expect(_table.RowsWith(asset.Tag)).ToHaveCountAsync(0);
+        await Expect(_table.Rows.Filter(new() { HasText = "No matching records found" })).ToHaveCountAsync(1);
+    }
 }

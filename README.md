@@ -71,8 +71,12 @@ public demo.
 
 ## Overview
 
-One NUnit test, `AssetLifecycleTests.Macbook_can_be_created_checked_out_found_and_audited`, walks through the
-whole lifecycle in a fresh browser context. Page objects hold the interactions and UI assertions, so the test
+The lifecycle test, `AssetLifecycleTests.Macbook_can_be_created_checked_out_found_and_audited`, walks through
+the whole lifecycle in a fresh browser context. Four more E2E tests cover the rest: a checked-out asset is checked
+in (`AssetManagementTests.Checked_out_asset_can_be_checked_in`), an asset is edited and deleted
+(`Asset_can_be_edited_and_deleted`), the create form refuses an asset without its required fields
+(`Asset_without_required_fields_is_refused`), and a wrong password is rejected
+(`LoginTests.Wrong_password_is_rejected`). Page objects hold the interactions and UI assertions, so each test
 reads like the brief. A base fixture owns the browser context, tracing, video, logging and the artifacts.
 
 ```mermaid
@@ -200,7 +204,9 @@ already present. No credentials need to be configured: the defaults are the demo
 │   ├── Fixtures/SnipeItTest.cs          context, tracing, video, artifacts
 │   ├── Logging/                         NUnit logger provider, log messages
 │   ├── Pages/                           Login, CreateAsset, Assets, AssetDetails
-│   ├── Tests/AssetLifecycleTests.cs     the end-to-end test (category E2E)
+│   ├── Tests/AssetLifecycleTests.cs     the lifecycle end-to-end test (category E2E)
+│   ├── Tests/AssetManagementTests.cs    check-in, edit and delete, required fields (category E2E)
+│   ├── Tests/LoginTests.cs              wrong password rejected (category E2E)
 │   ├── Tests/Unit/                      unit tests (category Unit)
 │   ├── appsettings.json                 defaults
 │   └── accessibility-baseline.json      known critical axe rules per page
