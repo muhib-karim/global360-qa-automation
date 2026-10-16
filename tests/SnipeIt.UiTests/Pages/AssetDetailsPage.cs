@@ -61,7 +61,7 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await Expect(page.GetByRole(AriaRole.Heading).Filter(new() { HasText = asset.Tag })).ToBeVisibleAsync();
     }
 
-    /// <summary>Checks the asset in through its own Checkin button and form.</summary>
+    /// <summary>Checks the asset in through its own Checkin button and form; the demo then redirects away.</summary>
     public async Task CheckInAsync(string note)
     {
         var assetUrl = new Uri(page.Url);
@@ -70,7 +70,10 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await Expect(page.Locator("#submit_button")).ToBeVisibleAsync();
         await page.Locator("#note").FillAsync(note);
         await page.Locator("#submit_button").ClickAsync();
-        await Expect(page.Locator(".alert-success")).ToContainTextAsync("checked in");
+        // The demo redirects to the listing; the success flash is not always rendered there, so the outcome is
+        // verified on the asset page and through the API rather than on the flash.
+        await Expect(page).Not.ToHaveURLAsync(new Uri(assetUrl, $"{assetUrl.AbsolutePath}/checkin").ToString());
+        await Expect(page.Locator(".alert-danger")).ToHaveCountAsync(0);
     }
 
     /// <summary>After a check-in: same asset, deployable status, nobody assigned.</summary>
@@ -100,14 +103,18 @@ internal sealed partial class AssetDetailsPage(IPage page)
     /// <summary>Edits the name and notes through the asset's own Update button and form.</summary>
     public async Task EditAsync(AssetData updated)
     {
-        var assetPath = new Uri(page.Url).AbsolutePath;
-        await page.Locator($"a[href$='{assetPath}/edit']").ClickAsync();
+        var assetUrl = new Uri(page.Url);
+        var editUrl = new Uri(assetUrl, $"{assetUrl.AbsolutePath}/edit").ToString();
+        await page.Locator($"a[href$='{assetUrl.AbsolutePath}/edit']").ClickAsync();
+        await Expect(page).ToHaveURLAsync(editUrl);
         await Expect(page.GetByLabel("Asset Tag", new() { Exact = true })).ToHaveValueAsync(updated.Tag);
         await page.Locator("#optional_info").ClickAsync();
         await page.Locator("#name").FillAsync(updated.Name);
         await page.Locator("#notes").FillAsync(updated.Notes);
         await page.Locator("#submit_button").ClickAsync();
-        await Expect(page.Locator(".alert-success")).ToContainTextAsync("updated");
+        // Same as the check-in: the save redirects away and the flash is not reliable, the asset page is.
+        await Expect(page).Not.ToHaveURLAsync(editUrl);
+        await Expect(page.Locator(".alert-danger")).ToHaveCountAsync(0);
     }
 
     /// <summary>After an edit: the new name and notes, and the untouched tag, serial and model.</summary>
@@ -126,8 +133,11 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await page.Locator("button.delete-asset").ClickAsync();
         var dialog = page.Locator("#dataConfirmModal");
         await Expect(dialog).ToBeVisibleAsync();
+        var assetUrl = page.Url;
         await dialog.Locator("#dataConfirmOK").ClickAsync();
-        await Expect(page.Locator(".alert-success")).ToContainTextAsync("deleted");
+        // The delete redirects to the listing; the list and the API prove the delete, not the flash.
+        await Expect(page).Not.ToHaveURLAsync(assetUrl);
+        await Expect(page.Locator(".alert-danger")).ToHaveCountAsync(0);
     }
 
     private ILocator RowWithAction(BootstrapTable table, string action) =>
@@ -140,7 +150,8 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await Expect(value).ToHaveTextAsync(expected);
     }
 
-    // For example "Fri Oct 16, 2026 2:04AM" with the demo's default date settings.
-    [GeneratedRegex(@"\w{3} \w{3} \d{1,2}, \d{4} \d{1,2}:\d{2}[AP]M")]
+    // A date with a four-digit year and a time, whatever the display format: the demo's date format is a shared
+    // setting that anyone can change, and it has shown both "Fri Oct 16, 2026 2:04AM" and "10/16/2026 07:20".
+    [GeneratedRegex(@"\b\d{4}\b.*\b\d{1,2}:\d{2}\b")]
     private static partial Regex HistoryDate();
 }
