@@ -24,13 +24,17 @@ internal static partial class Log
 
     [LoggerMessage(EventId = 6, Level = LogLevel.Information,
         Message = "Accessibility {PageName}: {Violations} violated rules, critical rules [{CriticalRules}]")]
-    public static partial void AxeScanned(this ILogger logger, string pageName, int violations, string criticalRules);
+    public static partial void AxeScanned(this ILogger logger, string pageName, int violations, IEnumerable<string> criticalRules);
 
-    [LoggerMessage(EventId = 7, Level = LogLevel.Information, Message = "API cross-check: {Detail}")]
-    public static partial void ApiChecked(this ILogger logger, string detail);
+    [LoggerMessage(EventId = 7, Level = LogLevel.Information, Message = "API probe: {Detail}")]
+    public static partial void ApiProbed(this ILogger logger, string detail);
+
+    [LoggerMessage(EventId = 10, Level = LogLevel.Information,
+        Message = "API cross-check: GET /api/v1/hardware?search={AssetTag} returned {Status} with rows [{Assets}]")]
+    public static partial void ApiChecked(this ILogger logger, string assetTag, int status, IEnumerable<object> assets);
 
     [LoggerMessage(EventId = 8, Level = LogLevel.Information, Message = "Artifacts ({Outcome}): {Directory}")]
-    public static partial void ArtifactsSaved(this ILogger logger, string outcome, string directory);
+    public static partial void ArtifactsSaved(this ILogger logger, NUnit.Framework.Interfaces.TestStatus outcome, string directory);
 
     [LoggerMessage(EventId = 9, Level = LogLevel.Warning, Message = "Could not save {Artifact}: {Reason}")]
     public static partial void ArtifactFailed(this ILogger logger, string artifact, string reason);

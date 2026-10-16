@@ -38,7 +38,7 @@ internal sealed class AxeAudit(IPage page, string outputDir, ILogger logger)
         var byImpact = violations.GroupBy(v => v.Impact ?? "unknown")
             .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
         Summary[pageName] = new AxePageSummary(violations.Length, byImpact, critical);
-        logger.AxeScanned(pageName, violations.Length, string.Join(", ", critical));
+        logger.AxeScanned(pageName, violations.Length, critical);
     }
 
     /// <returns>Per page, the critical rules that are not in the baseline. Empty when nothing new appeared.</returns>

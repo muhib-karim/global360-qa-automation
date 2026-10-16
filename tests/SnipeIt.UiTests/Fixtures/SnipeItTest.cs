@@ -90,7 +90,7 @@ public abstract class SnipeItTest : BrowserTest
             await File.WriteAllTextAsync(Path.Combine(ArtifactsDir, "run.json"), JsonSerializer.Serialize(RunInfo, Json));
 
             // The video file is complete only after the context closes.
-            await TryAsync("browser context", Context.CloseAsync);
+            await TryAsync("browser context", () => Context.CloseAsync());
             var videoDir = Path.Combine(ArtifactsDir, "video");
             if (!Keep(Settings.Diagnostics.Video, failed) && Directory.Exists(videoDir))
                 Directory.Delete(videoDir, recursive: true);
@@ -100,7 +100,7 @@ public abstract class SnipeItTest : BrowserTest
                 TestContext.AddTestAttachment(file);
                 AllureApi.AddAttachment(file);
             }
-            Logger.ArtifactsSaved(outcome.ToString(), ArtifactsDir);
+            Logger.ArtifactsSaved(outcome, ArtifactsDir);
         }
         finally
         {

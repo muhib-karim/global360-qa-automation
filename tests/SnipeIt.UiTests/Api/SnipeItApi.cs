@@ -13,6 +13,8 @@ internal sealed record ApiAsset(string Tag, string Name, string Serial, string M
 /// </summary>
 internal sealed class SnipeItApi(IPage page, SnipeSettings settings)
 {
+    private static readonly string[] TokenPageHints = ["disabled", "demo", "Create New Token", "personal access"];
+
     public async Task<(int Status, ApiAsset[] Assets)> FindAssetsAsync(string search)
     {
         var token = await page.Locator("meta[name='csrf-token']").GetAttributeAsync("content") ?? "";
@@ -46,8 +48,7 @@ internal sealed class SnipeItApi(IPage page, SnipeSettings settings)
     {
         var response = await page.APIRequest.GetAsync(new Uri(settings.BaseUrl, "/account/api").ToString());
         var body = await response.TextAsync();
-        var hints = new[] { "disabled", "demo", "Create New Token", "personal access" }
-            .Where(h => body.Contains(h, StringComparison.OrdinalIgnoreCase));
+        var hints = TokenPageHints.Where(h => body.Contains(h, StringComparison.OrdinalIgnoreCase));
         return $"GET /account/api -> {response.Status} {response.Url}; hints: {string.Join(", ", hints)}";
     }
 

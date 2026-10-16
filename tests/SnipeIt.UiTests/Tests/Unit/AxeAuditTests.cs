@@ -32,8 +32,8 @@ public sealed class AxeAuditTests
 
         using (Assert.EnterMultipleScope())
         {
-            Assert.That(result["login"], Is.EqualTo(new[] { "button-name" }));
-            Assert.That(result["asset-page"], Is.EqualTo(new[] { "image-alt" }));
+            Assert.That(result["login"], Has.Length.EqualTo(1).And.Contains("button-name"));
+            Assert.That(result["asset-page"], Has.Length.EqualTo(1).And.Contains("image-alt"));
         }
     }
 }
