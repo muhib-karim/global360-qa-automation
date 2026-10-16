@@ -49,14 +49,21 @@ internal sealed class TestSettings
 
     public static TestSettings Load(Func<string, string?>? environment = null)
     {
-        environment ??= Environment.GetEnvironmentVariable;
+        // A test that injects its own environment gets no process environment at all,
+        // so its result does not depend on what is exported on the machine running it.
+        var builder = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile("appsettings.json", optional: false);
+        if (environment is null)
+        {
+            builder.AddEnvironmentVariables();
+            environment = Environment.GetEnvironmentVariable;
+        }
         var legacy = LegacyVariables
             .Select(v => new KeyValuePair<string, string?>(v.Key, environment(v.Variable)))
-            .Where(v => v.Value is not null);
-        var settings = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false)
-            .AddEnvironmentVariables()
+            .Where(v => v.Value is not null)
+            .ToList();
+        var settings = builder
             .AddInMemoryCollection(legacy)
             .Build()
             .Get<TestSettings>() ?? new TestSettings();
