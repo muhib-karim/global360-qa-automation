@@ -26,4 +26,16 @@ internal sealed class LoginPage(IPage page, SnipeSettings settings)
             .ToBeVisibleAsync();
         return (await page.Locator(".user-menu.user > a").InnerTextAsync()).Trim();
     }
+
+    /// <summary>Submits the wrong password and verifies the sign-in is refused: the error is shown and the login page stays.</summary>
+    public async Task SignInWithWrongPasswordAsync(string wrongPassword)
+    {
+        await page.GetByLabel("Username").FillAsync(settings.Username);
+        await page.Locator("input[name='password']").FillAsync(wrongPassword);
+        await page.GetByRole(AriaRole.Button, new() { Name = "Login", Exact = true }).ClickAsync();
+        await Expect(page.Locator(".alert-danger")).ToContainTextAsync("The username or password is incorrect");
+        await Expect(page).ToHaveURLAsync(new Uri(settings.BaseUrl, "/login").ToString());
+        await Expect(page.GetByRole(AriaRole.Button, new() { Name = "Login", Exact = true })).ToBeVisibleAsync();
+        await Expect(page.GetByRole(AriaRole.Heading, new() { Name = "Dashboard", Exact = true })).ToHaveCountAsync(0);
+    }
 }
