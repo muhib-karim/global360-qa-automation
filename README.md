@@ -86,3 +86,9 @@ Artifacts are git-ignored. Traces and HTML can include demo session data, so kee
 - The scope is the requested Chromium workflow, not cross-browser coverage, performance testing or a full inventory regression suite.
 
 The exact dependencies are in the project file and NuGet lock file. See [verification notes](docs/verification.md) for the checked run.
+
+## Maintenance checks
+
+The GitHub workflow restores locked dependencies, builds Release with warnings treated as errors and checks formatting. It does **not** run the browser test or contact the shared demo. Run the end-to-end test manually before accepting changes to the workflow or page objects. Dependabot proposes weekly NuGet and GitHub Actions updates; updates require review, not automatic merging. Actions are pinned to commit IDs.
+
+Before enabling Actions on a private repository, confirm the account's included minutes and spending controls. A workflow file is not a guarantee that hosted CI is free. If hosted Actions are unavailable, the same restore/build/format commands run locally.
