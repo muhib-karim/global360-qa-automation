@@ -25,4 +25,4 @@ RUN dotnet build --no-restore -c Release
 
 ENTRYPOINT ["dotnet", "test", "--no-build", "-c", "Release", "--filter", "TestCategory=E2E", \
     "--results-directory", "/src/TestResults", "--logger", "trx;LogFileName=e2e-docker.trx", \
-    "--logger", "console;verbosity=minimal"]
+    "--logger", "console;verbosity=normal"]

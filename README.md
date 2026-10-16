@@ -37,6 +37,16 @@ report plus traces, videos and screenshots for every run.
 | **API cross-check** | A read-only `GET /api/v1/hardware` lookup, using the signed-in session, confirms what the UI shows. |
 | **Quality gates** | Locked restore, analyzers with warnings as errors, `dotnet format`, unit tests, gitleaks, CodeQL. |
 
+### Screenshots from a passing CI run
+
+| Assets list, filtered by the new tag | Asset page details | History tab |
+| --- | --- | --- |
+| <img src="docs/img/assets-list.jpg" alt="Assets list showing exactly the new asset" width="300"> | <img src="docs/img/asset-details.jpg" alt="Asset page with tag, name, serial, model, status and assigned user" width="300"> | <img src="docs/img/asset-history.jpg" alt="History tab with one create new and one checkout entry" width="300"> |
+
+The GIF and screenshots are produced by the `e2e (chromium)` job (artifact `readme-media`) of run
+[38841064770](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38841064770) and show only the
+public demo.
+
 ## Contents
 
 - [Overview](#overview)
