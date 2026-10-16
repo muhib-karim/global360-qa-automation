@@ -13,7 +13,7 @@ Verified against the live public demo on 16 October 2026 (UTC).
 | Test | 1 passed, 0 failed, 0 skipped |
 | Latest run duration | 16 seconds (17.717 seconds total runner time) |
 
-The README's restore, build, PowerShell browser-install and test commands were run successfully. The strengthened History assertions passed on two consecutive runs with different generated assets and users. No retries are configured.
+The README's restore, build, PowerShell browser-install and test commands were run successfully. The retained run proof records one successful end-to-end run with the History assertions described in the README. No retries are configured.
 
 Latest run:
 
