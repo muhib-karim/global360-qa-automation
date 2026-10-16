@@ -6,6 +6,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
 
 ## [Unreleased]
 
+### Added
+
+- Four more E2E tests in the same matrix: a checked-out asset is checked in (status, assignment and History row
+  verified, API cross-checked), an asset is edited and then deleted (details, list and API verified), the create
+  form refuses an asset without its required fields, and a wrong password is rejected on the login page.
+
 ## [1.0.0] - 2026-10-16
 
 ### Added
