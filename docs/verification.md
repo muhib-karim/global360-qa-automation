@@ -4,6 +4,21 @@ Everything below comes from GitHub Actions logs and artifacts. Nothing here was 
 The demo is shared and resets, so the asset links in this file stop working after a reset; the runs and their
 artifacts (kept for 14 days, the Allure report for 30) are the evidence.
 
+## Release v1.0.0 on `main`
+
+Tag [`v1.0.0`](https://github.com/muhib-karim/global360-qa-automation/releases/tag/v1.0.0) is commit
+[`94054ff`](https://github.com/muhib-karim/global360-qa-automation/commit/94054ff), the squash merge of pull request [#6](https://github.com/muhib-karim/global360-qa-automation/pull/6). Its push to `main`
+ran every workflow green:
+
+| Workflow | Run | Result |
+| --- | --- | --- |
+| E2E | [38854731769](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38854731769) | chromium, firefox, webkit, Allure report and Pages publish passed |
+| Build and format | [38854731823](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38854731823) | `build-and-format`, `gitleaks` and `docker` passed |
+| CodeQL | [38854731798](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38854731798) | passed |
+
+The published report from `main` is at [/report/](https://muhib-karim.github.io/global360-qa-automation/report/).
+The detailed results below were recorded on the pull request before the merge.
+
 ## Verified commit
 
 Commit [`fdb894d`](https://github.com/muhib-karim/global360-qa-automation/commit/fdb894de2ce6e3e4969e8553db4cc667fc397507)
@@ -56,10 +71,6 @@ results in all three browsers.
 - The demo's personal access token page (`/account/api`) reads "This feature has been disabled for the demo
   installation" (run [38840073553](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38840073553),
   a temporary probe since removed). This is why the API cross-check uses the signed-in session instead.
-- The first "Build and format" run on `main`
-  ([38836389291](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38836389291)) never started:
-  its annotation reported an account billing or spending limit problem while the repository was private. A re-run
-  after the repository became public passed without code changes.
 
 ## Toolchain seen in the logs
 
