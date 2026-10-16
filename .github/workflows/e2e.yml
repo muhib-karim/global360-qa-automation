@@ -52,7 +52,7 @@ jobs:
           --results-directory "TestResults/attempt-$ATTEMPT"
           --logger "trx;LogFileName=e2e-$BROWSER.trx"
           --logger "html;LogFileName=e2e-$BROWSER.html"
-          --logger "console;verbosity=normal"'
+          --logger "console;verbosity=minimal"'
       - name: Job summary
         if: always()
         run: python3 .github/scripts/summarize.py "$BROWSER" "${{ steps.test.outputs.outcome }}" TestResults artifacts | tee -a "$GITHUB_STEP_SUMMARY"

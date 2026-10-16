@@ -13,7 +13,6 @@ internal sealed record ApiAsset(string Tag, string Name, string Serial, string M
 /// </summary>
 internal sealed class SnipeItApi(IPage page, SnipeSettings settings)
 {
-    private static readonly string[] TokenPageHints = ["disabled", "demo", "Create New Token", "personal access"];
 
     public async Task<(int Status, ApiAsset[] Assets)> FindAssetsAsync(string search)
     {
@@ -46,10 +45,9 @@ internal sealed class SnipeItApi(IPage page, SnipeSettings settings)
     // shortcut: temporary probe for the README's personal access token question, removed after one CI round.
     public async Task<string> ProbeTokenPageAsync()
     {
-        var response = await page.APIRequest.GetAsync(new Uri(settings.BaseUrl, "/account/api").ToString());
-        var body = await response.TextAsync();
-        var hints = TokenPageHints.Where(h => body.Contains(h, StringComparison.OrdinalIgnoreCase));
-        return $"GET /account/api -> {response.Status} {response.Url}; hints: {string.Join(", ", hints)}";
+        var response = await page.GotoAsync(new Uri(settings.BaseUrl, "/account/api").ToString());
+        var text = await page.Locator(".content-wrapper").InnerTextAsync();
+        return $"GET /account/api -> {response?.Status} {page.Url}; content: {text.ReplaceLineEndings(" | ")}";
     }
 
     // The API HTML-encodes text fields, for example Macbook Pro 13&quot;

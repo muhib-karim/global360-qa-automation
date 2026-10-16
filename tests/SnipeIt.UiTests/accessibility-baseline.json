@@ -1,1 +1,6 @@
-{}
+{
+  "login": [],
+  "create-asset": ["label"],
+  "assets-list": ["button-name", "label"],
+  "asset-page": ["aria-required-children", "button-name"]
+}

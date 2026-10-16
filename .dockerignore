@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/TestResults/
+**/allure-results/
+artifacts/
+allure-report/
+.git/
+.github/
+.devcontainer/
+docs/

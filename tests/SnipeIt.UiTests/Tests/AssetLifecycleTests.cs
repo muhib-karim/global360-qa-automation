@@ -53,12 +53,17 @@ public sealed class AssetLifecycleTests : SnipeItTest
         Logger.AssetVerified(Page.Url);
 
         var api = new SnipeItApi(Page, Settings.Snipe);
-        var probe = await api.ProbeTokenPageAsync();
-        Logger.ApiProbed(probe);
         var (status, found) = await StepAsync("Cross-check the asset through the REST API (read-only)",
             () => api.FindAssetsAsync(asset.Tag));
         Logger.ApiChecked(asset.Tag, status, found);
         RunInfo["apiStatus"] = status;
+        using (Assert.EnterMultipleScope())
+        {
+            Assert.That(status, Is.EqualTo(200), "GET /api/v1/hardware status");
+            Assert.That(found, Is.EqualTo(new[] { new ApiAsset(asset.Tag, asset.Name, asset.Serial, AssetData.Model, AssetData.Status, user.Id) }));
+        }
+        var probe = await api.ProbeTokenPageAsync();
+        Logger.ApiProbed(probe);
 
         RunInfo["accessibility"] = audit.Summary;
         var newCritical = AxeAudit.NewCriticalRules(audit.Summary,
