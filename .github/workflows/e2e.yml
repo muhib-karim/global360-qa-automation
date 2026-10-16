@@ -55,17 +55,21 @@ jobs:
           --logger "console;verbosity=normal"'
       - name: Job summary
         if: always()
+        shell: bash # pipefail, so the summary's exit code is not lost in the pipe to tee
         run: python3 .github/scripts/summarize.py "$BROWSER" "${{ steps.test.outputs.outcome }}" TestResults artifacts | tee -a "$GITHUB_STEP_SUMMARY"
       - name: Build README media from the passing run
         if: success() && matrix.browser == 'chromium'
         run: |
           command -v ffmpeg || { sudo apt-get update -q && sudo apt-get install -y -q ffmpeg; }
           mkdir -p media
-          video=$(find artifacts -name '*.webm' -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
+          # Only the newest passing run, never a failed first attempt that happens to be longer.
+          run_dir=$(python3 -c 'import glob, json, os; r = sorted(p for p in glob.glob("artifacts/*/run.json") if json.load(open(p)).get("outcome") == "Passed"); print(os.path.dirname(r[-1]) if r else "")')
+          [ -n "$run_dir" ] || { echo "::error::No passing run.json found under artifacts/"; exit 1; }
+          video=$(find "$run_dir" -name '*.webm' -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)
           ffmpeg -loglevel error -y -i "$video" \
             -vf "setpts=0.5*PTS,fps=4,scale=640:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96[p];[b][p]paletteuse=dither=bayer" \
             -loop 0 media/demo.gif
-          find artifacts -name '*.jpg' -exec cp {} media/ \;
+          find "$run_dir" -name '*.jpg' -exec cp {} media/ \;
           ls -l media
           size=$(stat -c %s media/demo.gif)
           [ "$size" -lt 2000000 ] || echo "::warning::demo.gif is $size bytes (over 2 MB)"
