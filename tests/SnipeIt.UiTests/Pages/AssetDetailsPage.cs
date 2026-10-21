@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+using System.Globalization;
 using Microsoft.Playwright;
 using SnipeIt.UiTests.Components;
 using SnipeIt.UiTests.Data;
@@ -6,7 +6,7 @@ using static Microsoft.Playwright.Assertions;
 
 namespace SnipeIt.UiTests.Pages;
 
-internal sealed partial class AssetDetailsPage(IPage page)
+internal sealed class AssetDetailsPage(IPage page)
 {
     public async Task VerifyDetailsAsync(AssetData asset, SelectedUser user)
     {
@@ -28,7 +28,8 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await Expect(page.Locator("#history")).ToBeVisibleAsync();
     }
 
-    public async Task VerifyHistoryAsync(AssetData asset, SelectedUser user, string actor)
+    /// <param name="startedUtc">When the test started; the History timestamps must belong to this run.</param>
+    public async Task VerifyHistoryAsync(AssetData asset, SelectedUser user, string actor, DateTime startedUtc)
     {
         var table = new BootstrapTable(page.Locator("#assetHistoryListingTable"));
         await Expect(table.Rows).ToHaveCountAsync(2);
@@ -37,6 +38,7 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await Expect(created).ToHaveCountAsync(1);
         await Expect(checkout).ToHaveCountAsync(1);
         var assetPath = new Uri(page.Url).AbsolutePath;
+        var timestamps = new List<DateTime>();
         foreach (var row in new[] { created, checkout })
         {
             var item = row.Locator($"a[href$='{assetPath}']");
@@ -44,7 +46,7 @@ internal sealed partial class AssetDetailsPage(IPage page)
             await Expect(item).ToContainTextAsync(asset.Name);
             await Expect(item).ToContainTextAsync(AssetData.Model);
             await Expect(await table.CellAsync(row, "created_by")).ToHaveTextAsync(actor);
-            await Expect(await table.CellAsync(row, "created_at")).ToHaveTextAsync(HistoryDate());
+            timestamps.Add(await HistoryTimestampAsync(await table.CellAsync(row, "created_at"), startedUtc));
             await Expect(await table.CellAsync(row, "quantity")).ToHaveTextAsync("1");
         }
         await Expect(await table.CellAsync(created, "target")).ToBeEmptyAsync();
@@ -52,6 +54,9 @@ internal sealed partial class AssetDetailsPage(IPage page)
             .Locator($"a[href$='/users/{user.Id}']")).ToHaveTextAsync(user.DisplayName);
         await Expect(await table.CellAsync(checkout, "note"))
             .ToHaveTextAsync("Checked out on asset creation");
+        // Both rows come from the one create-and-check-out submit.
+        Assert.That((timestamps[1] - timestamps[0]).Duration(), Is.LessThanOrEqualTo(TimeSpan.FromMinutes(2)),
+            "The create new and checkout rows should be logged together");
     }
 
     /// <summary>Opens the asset page by its URL (after a redirect to the listing) and waits for the tag heading.</summary>
@@ -150,8 +155,19 @@ internal sealed partial class AssetDetailsPage(IPage page)
         await Expect(value).ToHaveTextAsync(expected);
     }
 
-    // A date with a four-digit year and a time, whatever the display format: the demo's date format is a shared
-    // setting that anyone can change, and it has shown both "Fri Oct 16, 2026 2:04AM" and "10/16/2026 07:20".
-    [GeneratedRegex(@"\b\d{4}\b.*\b\d{1,2}:\d{2}\b")]
-    private static partial Regex HistoryDate();
+    // The demo's date and time format is a shared setting that anyone can change ("Wed Oct 21, 2026 4:31AM",
+    // "10/16/2026 07:20", ...), and its server timezone is not the runner's. So the cell is parsed with Snipe-IT's
+    // own formats and must be a server-local time of this run in some real timezone.
+    private static async Task<DateTime> HistoryTimestampAsync(ILocator cell, DateTime startedUtc)
+    {
+        await Expect(cell).Not.ToBeEmptyAsync();
+        var text = await cell.InnerTextAsync();
+        var readings = SnipeItDate.Parse(text)
+            .Where(reading => SnipeItDate.IsPlausible(reading, startedUtc, DateTime.UtcNow))
+            .ToList();
+        var started = startedUtc.ToString("u", CultureInfo.InvariantCulture);
+        Assert.That(readings, Is.Not.Empty,
+            $"History created_at '{text}' should be a Snipe-IT date and time from this run (started {started})");
+        return readings[0];
+    }
 }

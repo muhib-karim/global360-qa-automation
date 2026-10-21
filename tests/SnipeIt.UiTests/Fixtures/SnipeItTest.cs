@@ -20,7 +20,8 @@ public abstract class SnipeItTest : BrowserTest
 {
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
-    private DateTime _startedUtc;
+    /// <summary>When the test started (UTC); History timestamps are checked against it.</summary>
+    private protected DateTime StartedUtc { get; private set; }
 
     private protected TestSettings Settings { get; private set; } = null!;
     private protected IBrowserContext Context { get; private set; } = null!;
@@ -34,14 +35,14 @@ public abstract class SnipeItTest : BrowserTest
     [SetUp]
     public async Task StartContextAsync()
     {
-        _startedUtc = DateTime.UtcNow;
+        StartedUtc = DateTime.UtcNow;
         Settings = TestSettings.Load();
         Logger = NUnitLoggerProvider.Factory.CreateLogger(GetType().Name);
         RunInfo = new() { ["browser"] = BrowserName, ["browserVersion"] = Browser.Version };
         var root = Settings.Diagnostics.OutputDir
                    ?? Path.Join(TestContext.CurrentContext.WorkDirectory, "artifacts");
         ArtifactsDir = Path.GetFullPath(Path.Join(root, string.Create(CultureInfo.InvariantCulture,
-            $"{BrowserName}-{TestContext.CurrentContext.Test.MethodName}-{_startedUtc:yyyyMMddTHHmmss}")));
+            $"{BrowserName}-{TestContext.CurrentContext.Test.MethodName}-{StartedUtc:yyyyMMddTHHmmss}")));
         Directory.CreateDirectory(ArtifactsDir);
 
         Context = await Browser.NewContextAsync(new()
@@ -82,7 +83,7 @@ public abstract class SnipeItTest : BrowserTest
             await TryAsync("trace", () => Context.Tracing.StopAsync(new() { Path = Path.Join(ArtifactsDir, "trace.zip") }));
         RunInfo["outcome"] = outcome.ToString();
         RunInfo["url"] = Page.Url;
-        RunInfo["durationSeconds"] = Math.Round((DateTime.UtcNow - _startedUtc).TotalSeconds, 1);
+        RunInfo["durationSeconds"] = Math.Round((DateTime.UtcNow - StartedUtc).TotalSeconds, 1);
         await File.WriteAllTextAsync(Path.Join(ArtifactsDir, "run.json"), JsonSerializer.Serialize(RunInfo, Json));
 
         // The video file is complete only after the context closes.
