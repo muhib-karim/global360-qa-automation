@@ -84,8 +84,9 @@ jobs:
           ls -l media
           size=$(stat -c %s media/demo.gif)
           [ "$size" -lt 2000000 ] || echo "::warning::demo.gif is $size bytes (over 2 MB)"
+      # Also after a pass on the CI-level retry: the failed first attempt is exactly the flake worth a look.
       - name: Collect the traces of failed tests
-        if: failure()
+        if: always()
         run: |
           mkdir -p failure-traces
           for run in artifacts/*/run.json; do
@@ -95,11 +96,11 @@ jobs:
           done
           ls -l failure-traces
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        if: failure()
+        if: always()
         with:
           name: failure-traces-${{ matrix.browser }}
           path: failure-traces/
-          if-no-files-found: warn
+          if-no-files-found: ignore
           retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
@@ -215,6 +216,38 @@ jobs:
           name: allure-report
           path: allure-report/
           retention-days: 30
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: src
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: test-results-*
+          path: test-results
+      - name: Build the Pages site (landing page, Allure, per-browser HTML reports, pass counts)
+        run: python3 src/.github/scripts/build-site.py src/docs allure-report test-results _site
+      - name: Screenshot the site and the reports (README showcase)
+        run: |
+          (cd _site && exec python3 -m http.server 8000 --bind 127.0.0.1 > /dev/null 2>&1) &
+          for _ in $(seq 1 40); do curl -sf -o /dev/null http://127.0.0.1:8000/ && break; sleep 0.5; done
+          mkdir -p screenshots
+          shot() { google-chrome --headless=new --no-sandbox --hide-scrollbars --window-size="$3" \
+            --virtual-time-budget=8000 --screenshot="screenshots/$1.png" "http://127.0.0.1:8000/$2"; }
+          shot landing "" 1280,1100
+          shot allure "report/index.html" 1440,900
+          shot report-chromium "runs/chromium.html" 1280,900 || true
+          ls -l screenshots
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: site-screenshots
+          path: screenshots/
+          retention-days: 14
+      # Built on every run, so a branch proves the exact site that main publishes.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pages-site
+          path: _site/
+          retention-days: 30
 
   pages:
     name: Publish GitHub Pages
@@ -233,15 +266,10 @@ jobs:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
-          name: allure-report
-          path: _site/report
-      - name: Assemble the site
-        run: cp -r docs/. _site/ && rm -f _site/*.md
+          name: pages-site
+          path: _site
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
