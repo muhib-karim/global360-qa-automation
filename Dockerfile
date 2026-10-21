@@ -18,7 +18,8 @@ RUN dotnet restore --locked-mode && dotnet build --no-restore -c Release
 USER root
 RUN pwsh tests/SnipeIt.UiTests/bin/Release/net10.0/playwright.ps1 install-deps chromium && rm -rf /var/lib/apt/lists/*
 USER app
-RUN pwsh tests/SnipeIt.UiTests/bin/Release/net10.0/playwright.ps1 install chromium
+COPY --chown=app:app .github/scripts/install-browsers.sh .github/scripts/
+RUN INSTALL_ARGS= .github/scripts/install-browsers.sh chromium
 
 COPY --chown=app:app tests/ tests/
 RUN dotnet build --no-restore -c Release

@@ -57,6 +57,17 @@ jobs:
           grep -qx 'outcome=failed' retry2
           GITHUB_OUTPUT=retry3 .github/scripts/retry-once.sh 'true'
           grep -qx 'outcome=passed' retry3
+      - name: Self-test the browser install script
+        env:
+          BACKOFF_SECONDS: '0'
+        run: |
+          # The fake installer fails unless a mirror is pinned, as when the default download host is down.
+          printf '#!/bin/sh\necho "fake $*"; [ -n "${PLAYWRIGHT_DOWNLOAD_HOST:-}" ]\n' > "$RUNNER_TEMP/fake-playwright"
+          chmod +x "$RUNNER_TEMP/fake-playwright"
+          INSTALLER="$RUNNER_TEMP/fake-playwright" .github/scripts/install-browsers.sh chromium | tee install1
+          grep -qx 'fake install --with-deps chromium' install1
+          grep -qx 'Installed chromium on attempt 2' install1
+          if INSTALLER=false INSTALL_ATTEMPTS=3 .github/scripts/install-browsers.sh webkit; then exit 1; fi
 
   gitleaks:
     name: gitleaks

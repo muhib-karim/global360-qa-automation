@@ -6,5 +6,6 @@ artifacts/
 allure-report/
 .git/
 .github/
+!.github/scripts/install-browsers.sh
 .devcontainer/
 docs/

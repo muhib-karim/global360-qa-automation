@@ -42,8 +42,19 @@ jobs:
           global-json-file: global.json
       - run: dotnet restore --locked-mode
       - run: dotnet build --no-restore --configuration Release
-      - name: Install ${{ matrix.browser }} with OS dependencies
-        run: pwsh tests/SnipeIt.UiTests/bin/Release/net10.0/playwright.ps1 install --with-deps ${{ matrix.browser }}
+      - name: Read the Playwright version
+        id: playwright
+        run: |
+          version=$(jq -r '.dependencies["net10.0"]["Microsoft.Playwright"].resolved' tests/SnipeIt.UiTests/packages.lock.json)
+          [[ "$version" =~ ^[0-9]+\.[0-9]+ ]] || { echo "::error::No Microsoft.Playwright version in packages.lock.json"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Cache the ${{ matrix.browser }} download
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: ms-playwright-${{ runner.os }}-${{ matrix.browser }}-${{ steps.playwright.outputs.version }}
+      - name: Install ${{ matrix.browser }} with OS dependencies (retries with backoff, alternate mirror)
+        run: .github/scripts/install-browsers.sh "$BROWSER"
       - name: Run E2E (one CI-level retry on failure)
         id: test
         run: >-
@@ -73,6 +84,23 @@ jobs:
           ls -l media
           size=$(stat -c %s media/demo.gif)
           [ "$size" -lt 2000000 ] || echo "::warning::demo.gif is $size bytes (over 2 MB)"
+      - name: Collect the traces of failed tests
+        if: failure()
+        run: |
+          mkdir -p failure-traces
+          for run in artifacts/*/run.json; do
+            [ "$(jq -r .outcome "$run")" = Failed ] || continue
+            dir=$(dirname "$run")
+            [ -f "$dir/trace.zip" ] && cp "$dir/trace.zip" "failure-traces/$(basename "$dir").zip"
+          done
+          ls -l failure-traces
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: failure()
+        with:
+          name: failure-traces-${{ matrix.browser }}
+          path: failure-traces/
+          if-no-files-found: warn
+          retention-days: 14
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
