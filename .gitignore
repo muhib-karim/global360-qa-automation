@@ -11,3 +11,4 @@ allure-report/
 *.trx
 trace.zip
 *.webm
+.archify/
