@@ -113,7 +113,7 @@ internal sealed class AssetDetailsPage(IPage page)
         await page.Locator($"a[href$='{assetUrl.AbsolutePath}/edit']").ClickAsync();
         await Expect(page).ToHaveURLAsync(editUrl);
         await Expect(page.GetByLabel("Asset Tag", new() { Exact = true })).ToHaveValueAsync(updated.Tag);
-        await page.Locator("#optional_info").ClickAsync();
+        await new OptionalInfoSection(page).OpenAsync();
         await page.Locator("#name").FillAsync(updated.Name);
         await page.Locator("#notes").FillAsync(updated.Notes);
         await page.Locator("#submit_button").ClickAsync();

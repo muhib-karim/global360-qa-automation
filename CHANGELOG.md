@@ -15,8 +15,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and 
   `AM` touches the minutes. `SnipeItDate` now parses the cell with Snipe-IT's own nine date and three time
   display formats and the invariant culture; the value must be a time of this run in some real server timezone,
   and the create and checkout rows must be logged together.
-- Two create-form flakes: a click lost while the deployable-status message shifted the layout (Firefox), and a
-  wait on a success flash the demo does not always render after the redirect (WebKit).
+- Three asset-form flakes: a click lost while the deployable-status message shifted the layout (Firefox), a
+  wait on a success flash the demo does not always render after the redirect (WebKit), and a blind click that
+  closed the "Optional Information" section the page had just reopened from its cookie (Chromium).
 
 ### Added
 

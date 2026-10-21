@@ -26,7 +26,7 @@ internal sealed class CreateAssetPage(IPage page, SnipeSettings settings)
         var id = await users.SelectedOption.GetAttributeAsync("value")
                  ?? throw new InvalidOperationException("Selected user has no ID.");
         var user = new SelectedUser(id, optionText.Split(" (")[0], optionText);
-        await page.Locator("#optional_info").ClickAsync();
+        await new OptionalInfoSection(page).OpenAsync();
         await page.Locator("#name").FillAsync(asset.Name);
         await page.Locator("#notes").FillAsync(asset.Notes);
         await SubmitAsync();
@@ -40,7 +40,7 @@ internal sealed class CreateAssetPage(IPage page, SnipeSettings settings)
         await page.Locator("#serial_1").FillAsync(asset.Serial);
         await new Select2(page, "model_select_id").SearchAndSelectAsync("Macbook Pro 13", AssetData.Model);
         await SelectDeployableStatusAsync();
-        await page.Locator("#optional_info").ClickAsync();
+        await new OptionalInfoSection(page).OpenAsync();
         await page.Locator("#name").FillAsync(asset.Name);
         await page.Locator("#notes").FillAsync(asset.Notes);
         await SubmitAsync();

@@ -60,9 +60,9 @@ would have, and every run downloaded about 190 MiB again. Now:
 - `actions/cache` on `~/.cache/ms-playwright`, key `ms-playwright-<os>-<browser>-<Playwright version>`, the
   version read from `packages.lock.json` (the step fails if it cannot read one).
 
-## Two more flakes found on the way
+## Three more flakes found on the way
 
-Both were in the create form and both showed up in runs on this branch or in the failing nightly:
+All three were in the asset form and showed up in the failing nightly or in runs on this branch:
 
 - Firefox (nightly, attempt 2): `#name` never became visible. The trace shows the `#optional_info` click 67 ms
   after choosing the status. Choosing a status calls `/api/v1/statuslabels/<id>/deployable` and then fades in
@@ -72,6 +72,12 @@ Both were in the create form and both showed up in runs on this branch or in the
   asset list. The demo does not always render the flash after a redirect, as the existing check-in, edit and
   delete steps already document. Creation is now verified the same way: the form is left without an error, then
   the list, the asset page and the API prove it.
+- Chromium (run 39695719121, attempt 1): `#name` not visible on the edit form. Its `failure.html` shows
+  `optional_details` hidden by jQuery and the caret back to closed: two toggles. The page saves the "Optional
+  Information" open state in a cookie (set when the create form opened it) and replays it with a click on
+  document ready, so the test's own click closed the section whenever it landed after the replay.
+  `Components/OptionalInfoSection` now waits for the load event and clicks only if the caret says the section is
+  closed, then asserts it is open. It is used by both create methods and the edit step.
 
 ## Flakiness controls
 
