@@ -392,8 +392,9 @@ During a reset it answers HTTP 503 with a "Resetting the database" page.
   Whether a live run needed the retry is visible in its summary; [docs/verification.md](docs/verification.md)
   records it for the cited runs.
 - **Browser install.** `.github/scripts/install-browsers.sh` installs each engine with up to four attempts and
-  exponential backoff (10, 20, 40 s); after a failure it pins `PLAYWRIGHT_DOWNLOAD_HOST` to the next alternate
-  Playwright mirror. `~/.cache/ms-playwright` is cached per browser, keyed on the Playwright version in
+  exponential backoff (10, 20, 40 s). Attempts 1 and 2 use Playwright's own host list; attempts 3 and 4 pin
+  `PLAYWRIGHT_DOWNLOAD_HOST` to each official Playwright host on its own (`PLAYWRIGHT_MIRRORS` can put an
+  independent mirror first). `~/.cache/ms-playwright` is cached per browser, keyed on the Playwright version in
   `packages.lock.json`, so most runs download nothing. The build job self-tests the script offline.
 - **Failure traces.** Every failed test keeps its `trace.zip`; the E2E job also uploads them on their own as
   `failure-traces-<browser>`, including a first attempt that the CI-level retry then passed. Open one with

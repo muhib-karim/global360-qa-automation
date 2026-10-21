@@ -29,8 +29,13 @@ public sealed class QuarantineTests
             foreach (var (name, reason, until) in quarantines)
             {
                 Assert.That(reason, Is.Not.Empty, $"{name}: the reason should name the tracking issue");
-                Assert.That(DateOnly.ParseExact(until, "yyyy-MM-dd", CultureInfo.InvariantCulture),
-                    Is.GreaterThanOrEqualTo(today), $"{name}: the quarantine expired; fix the test or delete it");
+                if (!DateOnly.TryParseExact(until, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None,
+                        out var expiry))
+                {
+                    Assert.Fail($"{name}: until '{until}' should be a yyyy-MM-dd date");
+                    continue;
+                }
+                Assert.That(expiry, Is.GreaterThanOrEqualTo(today), $"{name}: the quarantine expired; fix the test or delete it");
             }
         }
     }

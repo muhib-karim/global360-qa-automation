@@ -4,11 +4,12 @@ Handoff note for the next session. Short on purpose; details live in HANDOFF.md 
 
 ## Status
 
-v1.1.0 in progress on `upgrade/v1.1.0`. Spec and plan in `docs/superpowers/`.
+v1.1.0 implemented on `upgrade/v1.1.0` (plan tasks 1-5 done). E2E green twice on the branch (runs 39693770413,
+39694502145); Build and CodeQL green on 4d17ca3. Code review of the branch in progress.
 
 ## Next step
 
-Task 1 of the plan: `SnipeItDate` parser, test first.
+Apply review findings, push, confirm every workflow green on the head, record runs in docs/verification.md.
 
 ## Decisions
 
@@ -22,3 +23,4 @@ Task 1 of the plan: `SnipeItDate` parser, test first.
 - The shared demo's date format setting changes over time (seen: `Wed Oct 21, 2026 4:31AM`, `10/16/2026 07:20`).
 
 ## Session log
+2026-10-21 23:50Z claude-code/claude-opus-5-5: date fix, install robustness, quarantine, Pages report, docs done; review and final green head next.

@@ -61,12 +61,14 @@ jobs:
         env:
           BACKOFF_SECONDS: '0'
         run: |
-          # The fake installer fails unless a mirror is pinned, as when the default download host is down.
+          # The fake installer fails unless a mirror is pinned, as when Playwright's own hosts are all down:
+          # attempts 1 and 2 use the default list, attempt 3 pins the first mirror.
           printf '#!/bin/sh\necho "fake $*"; [ -n "${PLAYWRIGHT_DOWNLOAD_HOST:-}" ]\n' > "$RUNNER_TEMP/fake-playwright"
           chmod +x "$RUNNER_TEMP/fake-playwright"
           INSTALLER="$RUNNER_TEMP/fake-playwright" .github/scripts/install-browsers.sh chromium | tee install1
           grep -qx 'fake install --with-deps chromium' install1
-          grep -qx 'Installed chromium on attempt 2' install1
+          grep -qx 'Installed chromium on attempt 3' install1
+          [ "$(grep -cx 'fake install --with-deps chromium' install1)" = 3 ]
           if INSTALLER=false INSTALL_ATTEMPTS=3 .github/scripts/install-browsers.sh webkit; then exit 1; fi
 
   gitleaks:

@@ -1,8 +1,9 @@
 """Assembles the GitHub Pages site: the docs landing page, the merged Allure report, each browser's VSTest HTML
 report from its final attempt, and latest.json with the pass counts the landing page shows.
 
-Usage: build-site.py <docs-dir> <allure-report-dir> <test-results-dir> <out-dir>
+Usage: build-site.py <docs-dir> <allure-report-dir> <test-results-dir> <out-dir> [expected,browsers]
 <test-results-dir> holds one test-results-<browser> folder per matrix job (actions/download-artifact layout).
+An expected browser without a TRX (its job died before the tests) is listed as missing, never dropped.
 Exits 1 if no browser has a TRX, so an empty report is never published as if it were a run.
 """
 import datetime
@@ -14,6 +15,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 docs, allure, results, out = sys.argv[1:5]
+expected = [b for b in (sys.argv[5] if len(sys.argv) > 5 else "").split(",") if b]
 ns = {"t": "http://microsoft.com/schemas/VisualStudio/TeamTest/2010"}
 
 shutil.copytree(docs, out, ignore=shutil.ignore_patterns("*.md", "superpowers"), dirs_exist_ok=True)
@@ -46,6 +48,9 @@ for folder in sorted(glob.glob(os.path.join(results, "test-results-*"))):
 if not browsers:
     print("No TRX found under", results)
     sys.exit(1)
+found = {b["browser"] for b in browsers}
+browsers += [{"browser": b, "attempt": None, "total": 0, "passed": 0, "failed": 0, "html": None, "missing": True}
+             for b in expected if b not in found]
 
 statistic = None
 summary = os.path.join(allure, "widgets", "summary.json")

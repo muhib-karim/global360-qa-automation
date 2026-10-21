@@ -93,7 +93,7 @@
     <p class="verdict" id="latest-verdict" role="status" aria-atomic="true">Loading the latest run...</p>
     <div class="table-scroll">
       <table id="latest-table" hidden>
-        <caption class="meta" style="caption-side: bottom; text-align: left">Final attempt of each browser job. Each browser runs the same five E2E tests.</caption>
+        <caption class="meta" style="caption-side: bottom; text-align: left">Final attempt of each browser job.</caption>
         <thead><tr><th scope="col">Browser</th><th scope="col" class="num">Passed</th><th scope="col" class="num">Failed</th><th scope="col" class="num">Total</th><th scope="col">Report</th></tr></thead>
         <tbody></tbody>
       </table>
@@ -113,18 +113,20 @@
         const run = await response.json();
         const passed = run.browsers.reduce((sum, b) => sum + b.passed, 0);
         const total = run.browsers.reduce((sum, b) => sum + b.total, 0);
-        const ok = total > 0 && passed === total;
+        const missing = run.browsers.filter(b => b.missing).length;
+        const ok = total > 0 && passed === total && missing === 0;
         verdict.className = "verdict " + (ok ? "pass" : "fail");
         verdict.innerHTML = icon(ok) + "<span></span>";
         verdict.querySelector("span").textContent = ok
           ? `All ${total} tests passed in ${run.browsers.length} browsers`
-          : `${passed} of ${total} tests passed in ${run.browsers.length} browsers`;
+          : `${passed} of ${total} tests passed in ${run.browsers.length - missing} browsers` +
+            (missing ? `, ${missing} browser job${missing > 1 ? "s" : ""} produced no results` : "");
         const body = document.querySelector("#latest-table tbody");
         for (const b of run.browsers) {
           const row = body.insertRow();
-          row.insertCell().textContent = b.browser + (b.attempt === "attempt-2" ? " (CI retry)" : "");
+          row.insertCell().textContent = b.browser + (b.attempt === "attempt-2" ? " (CI retry)" : "") + (b.missing ? " (no results)" : "");
           for (const n of [b.passed, b.failed, b.total]) Object.assign(row.insertCell(), { className: "num", textContent: n });
-          const link = Object.assign(document.createElement("a"), { textContent: "HTML report", href: b.html || "report/index.html" });
+          const link = Object.assign(document.createElement("a"), { textContent: b.missing ? "CI run" : "HTML report", href: b.missing ? (run.run || "report/index.html") : (b.html || "report/index.html") });
           row.insertCell().append(link);
         }
         document.getElementById("latest-table").hidden = false;

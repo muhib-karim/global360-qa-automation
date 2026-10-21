@@ -145,7 +145,8 @@ jobs:
       - name: Find quarantined tests
         id: find
         run: |
-          count=$(git grep -hE '^\s*\[Quarantine\(' -- tests/ | wc -l)
+          # [Quarantine(...)] alone or combined, for example [Test, Quarantine(...)]; comments do not count.
+          count=$(git grep -hE '\bQuarantine\(' -- tests/ | grep -cvE '^\s*//' || true)
           echo "count=$count" >> "$GITHUB_OUTPUT"
           echo "Quarantined tests: $count" | tee -a "$GITHUB_STEP_SUMMARY"
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
@@ -225,7 +226,7 @@ jobs:
           pattern: test-results-*
           path: test-results
       - name: Build the Pages site (landing page, Allure, per-browser HTML reports, pass counts)
-        run: python3 src/.github/scripts/build-site.py src/docs allure-report test-results _site
+        run: python3 src/.github/scripts/build-site.py src/docs allure-report test-results _site chromium,firefox,webkit
       - name: Screenshot the site and the reports (README showcase)
         run: |
           (cd _site && exec python3 -m http.server 8000 --bind 127.0.0.1 > /dev/null 2>&1) &

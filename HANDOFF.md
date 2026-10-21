@@ -37,7 +37,7 @@ Fix (`tests/SnipeIt.UiTests/Data/SnipeItDate.cs`, used by `AssetDetailsPage.Veri
 - The parsed time must be a server-local time of this run in some real timezone: between the test start minus
   12 h and now plus 14 h. A stale row from yesterday or a garbage string fails.
 - The `create new` and `checkout` rows must be within two minutes of each other.
-- 28 unit tests pin it, including a `th-TH` (Buddhist calendar) culture run, the failing string itself, a wrong
+- 26 unit test cases pin it, including a `th-TH` (Buddhist calendar) culture run, the failing string itself, a wrong
   weekday and a date without a time. They were pushed first and watched failing (build run 39693113795), then
   passing (39693770403).
 
@@ -49,10 +49,14 @@ The install step logged `ENOTFOUND playwright.download.prss.microsoft.com` for F
 downloads. Playwright tried its next built-in host and succeeded, so it did not fail that run, but a wider outage
 would have, and every run downloaded about 190 MiB again. Now:
 
-- `.github/scripts/install-browsers.sh`: up to 4 attempts, backoff 10, 20, 40 s; attempts 2+ pin
-  `PLAYWRIGHT_DOWNLOAD_HOST` to the next alternate mirror (`PLAYWRIGHT_MIRRORS` overrides the list). Used by the
-  E2E matrix, the quarantine job and the Dockerfile. The build job self-tests it offline with a fake installer
-  that only succeeds once a mirror is pinned.
+- `.github/scripts/install-browsers.sh`: up to 4 attempts, backoff 10, 20, 40 s. Attempts 1 and 2 use
+  Playwright's own host list (it already falls through its CDN hosts per file, which is what saved the nightly).
+  Attempts 3 and 4 pin `PLAYWRIGHT_DOWNLOAD_HOST` to each official host on its own: the storage host that served
+  the downloads that night, then the CDN host. Both belong to Playwright, so a total Playwright outage still
+  fails the job; `PLAYWRIGHT_MIRRORS` takes an independent mirror (for example an internal artifact cache) if
+  one is wanted. A third-party public mirror was deliberately not added: browser binaries would come unverified
+  from outside Microsoft. Used by the E2E matrix, the quarantine job and the Dockerfile. The build job
+  self-tests it offline with a fake installer that only succeeds once a host is pinned (attempt 3).
 - `actions/cache` on `~/.cache/ms-playwright`, key `ms-playwright-<os>-<browser>-<Playwright version>`, the
   version read from `packages.lock.json` (the step fails if it cannot read one).
 
