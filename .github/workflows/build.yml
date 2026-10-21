@@ -3,7 +3,7 @@ name: Build and format
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'upgrade/**'] # release branches are verified before their PR
   workflow_dispatch:
 
 permissions:

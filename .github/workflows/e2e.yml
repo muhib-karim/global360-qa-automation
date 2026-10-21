@@ -3,7 +3,7 @@ name: E2E
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'upgrade/**'] # release branches are verified before their PR
   schedule:
     - cron: '17 3 * * *' # nightly; the shared demo changes and resets, so drift is caught daily
   workflow_dispatch:
