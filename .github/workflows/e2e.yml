@@ -59,7 +59,7 @@ jobs:
         id: test
         run: >-
           .github/scripts/retry-once.sh 'dotnet test --no-build --configuration Release
-          --filter TestCategory=E2E --blame-hang-timeout 8m
+          --filter "TestCategory=E2E&TestCategory!=Quarantine" --blame-hang-timeout 8m
           --results-directory "TestResults/attempt-$ATTEMPT"
           --logger "trx;LogFileName=e2e-$BROWSER.trx"
           --logger "html;LogFileName=e2e-$BROWSER.html"
@@ -124,6 +124,48 @@ jobs:
         with:
           name: readme-media
           path: media/
+          retention-days: 14
+
+  quarantine:
+    # Quarantined tests run here, outside the gate, until they are fixed or their [Quarantine] expires (see
+    # CONTRIBUTING.md). With nothing quarantined the job ends after the checkout.
+    name: quarantine (chromium, non-blocking)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    continue-on-error: true
+    env:
+      BROWSER: chromium
+      Diagnostics__OutputDir: ${{ github.workspace }}/artifacts
+      Diagnostics__Trace: On
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Find quarantined tests
+        id: find
+        run: |
+          count=$(git grep -hE '^\s*\[Quarantine\(' -- tests/ | wc -l)
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          echo "Quarantined tests: $count" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        if: steps.find.outputs.count != '0'
+        with:
+          global-json-file: global.json
+      - name: Build, install chromium and run the quarantined tests
+        if: steps.find.outputs.count != '0'
+        run: |
+          dotnet restore --locked-mode
+          dotnet build --no-restore --configuration Release
+          .github/scripts/install-browsers.sh chromium
+          dotnet test --no-build --configuration Release --filter "TestCategory=E2E&TestCategory=Quarantine" \
+            --results-directory TestResults --logger "trx;LogFileName=quarantine.trx" --logger "console;verbosity=normal"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always() && steps.find.outputs.count != '0'
+        with:
+          name: quarantine-results
+          path: |
+            TestResults/
+            artifacts/
           retention-days: 14
 
   report:

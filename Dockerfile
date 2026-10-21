@@ -24,6 +24,6 @@ RUN INSTALL_ARGS= .github/scripts/install-browsers.sh chromium
 COPY --chown=app:app tests/ tests/
 RUN dotnet build --no-restore -c Release
 
-ENTRYPOINT ["dotnet", "test", "--no-build", "-c", "Release", "--filter", "TestCategory=E2E", "--blame-hang-timeout", "8m", \
+ENTRYPOINT ["dotnet", "test", "--no-build", "-c", "Release", "--filter", "TestCategory=E2E&TestCategory!=Quarantine", "--blame-hang-timeout", "8m", \
     "--results-directory", "/src/TestResults", "--logger", "trx;LogFileName=e2e-docker.trx", \
     "--logger", "console;verbosity=normal"]
