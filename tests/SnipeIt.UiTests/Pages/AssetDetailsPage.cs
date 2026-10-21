@@ -28,7 +28,7 @@ internal sealed class AssetDetailsPage(IPage page)
         await Expect(page.Locator("#history")).ToBeVisibleAsync();
     }
 
-    /// <param name="startedUtc">When the test started; the History timestamps must belong to this run.</param>
+    /// <summary>The two History rows of a new checked-out asset; their timestamps must belong to this run.</summary>
     public async Task VerifyHistoryAsync(AssetData asset, SelectedUser user, string actor, DateTime startedUtc)
     {
         var table = new BootstrapTable(page.Locator("#assetHistoryListingTable"));
