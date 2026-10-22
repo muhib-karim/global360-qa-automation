@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 
 namespace SnipeIt.UiTests.Data;
 
@@ -9,7 +8,7 @@ namespace SnipeIt.UiTests.Data;
 /// those. Parsing uses the invariant culture: the demo renders English month names and Gregorian years whatever
 /// the culture of the machine running the tests.
 /// </summary>
-internal static partial class SnipeItDate
+internal static class SnipeItDate
 {
     // Snipe-IT's date_display_format options, as .NET patterns: Y-m-d, D M d Y, M j Y, d M Y, m/d/Y, n/d/y,
     // d/m/Y, d.m.Y, Y.m.d.
@@ -25,7 +24,8 @@ internal static partial class SnipeItDate
     /// <summary>Every reading of <paramref name="text"/>; two when day and month order cannot be told apart.</summary>
     public static IReadOnlyList<DateTime> Parse(string text)
     {
-        var normalized = Whitespace().Replace(text, " ").Trim();
+        // A null separator splits on every char.IsWhiteSpace character, the non-breaking space included.
+        var normalized = string.Join(' ', text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         return Dates.SelectMany(date => Times.Select(time => $"{date} {time}"))
             .Select(format => DateTime.TryParseExact(normalized, format, CultureInfo.InvariantCulture,
                 DateTimeStyles.None, out var value) ? value : (DateTime?)null)
@@ -41,7 +41,4 @@ internal static partial class SnipeItDate
     /// </summary>
     public static bool IsPlausible(DateTime display, DateTime startedUtc, DateTime nowUtc) =>
         display >= startedUtc.AddHours(-12).AddMinutes(-1) && display <= nowUtc.AddHours(14);
-
-    [GeneratedRegex(@"\s+")]
-    private static partial Regex Whitespace();
 }

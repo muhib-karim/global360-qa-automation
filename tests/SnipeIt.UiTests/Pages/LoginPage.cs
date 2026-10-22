@@ -16,6 +16,7 @@ internal sealed class LoginPage(IPage page, SnipeSettings settings)
         await Expect(page.GetByRole(AriaRole.Button, new() { Name = "Login", Exact = true })).ToBeVisibleAsync();
     }
 
+    /// <summary>Signs in with the configured demo account and waits for the dashboard.</summary>
     /// <returns>The signed-in user's display name, which History records as the actor.</returns>
     public async Task<string> SignInAsync()
     {
