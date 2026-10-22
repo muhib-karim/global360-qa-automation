@@ -9,12 +9,12 @@
   <style>
     :root {
       --bg: #f8fafc; --surface: #ffffff; --text: #0f172a; --muted: #475569; --border: #e2e8f0;
-      --accent: #2563eb; --accent-2: #0d9488; --ok: #16a34a; --code: #f1f5f9;
+      --accent: #2563eb; --accent-2: #0d9488; --ok: #15803d; --fail: #b91c1c; --code: #f1f5f9; --on-accent: #ffffff;
     }
     @media (prefers-color-scheme: dark) {
       :root {
         --bg: #0b1220; --surface: #111a2e; --text: #e2e8f0; --muted: #94a3b8; --border: #1e2a44;
-        --accent: #60a5fa; --accent-2: #2dd4bf; --ok: #4ade80; --code: #0f1a30;
+        --accent: #60a5fa; --accent-2: #2dd4bf; --ok: #4ade80; --fail: #f87171; --code: #0f1a30; --on-accent: #0b1220;
       }
     }
     * { box-sizing: border-box; }
@@ -26,7 +26,7 @@
     nav { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 8px 0 28px; }
     .button { display: inline-block; padding: 9px 16px; border-radius: 999px; text-decoration: none; font-weight: 600;
       border: 1px solid var(--border); background: var(--surface); color: var(--text); }
-    .button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
     h1 { font-size: 1.9rem; margin: 0 0 6px; }
     h2 { margin-top: 44px; font-size: 1.35rem; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
     .lead { color: var(--muted); font-size: 1.08rem; margin-top: 0; }
@@ -49,6 +49,20 @@
     .shots figure { margin: 0; }
     .shots img { width: 100%; border-radius: 10px; border: 1px solid var(--border); }
     figcaption { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+    .latest { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin: 0 0 8px; }
+    .latest h2 { margin: 0 0 4px; border: 0; padding: 0; font-size: 1.15rem; }
+    .latest .verdict { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 0 0 12px; }
+    .latest .verdict svg { flex: none; }
+    .latest .verdict.pass { color: var(--ok); }
+    .latest .verdict.fail { color: var(--fail); }
+    .latest table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
+    .latest th, .latest td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--border); }
+    .latest th { color: var(--muted); font-weight: 600; font-size: 0.85rem; border-top: 0; }
+    .latest td.num, .latest th.num { text-align: right; }
+    .latest .meta { color: var(--muted); font-size: 0.9rem; margin: 10px 0 0; }
+    .table-scroll { overflow-x: auto; }
+    ::selection { background: var(--accent); color: var(--on-accent); }
+    a:focus-visible, .button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
     footer { color: var(--muted); font-size: 0.9rem; margin-top: 48px; border-top: 1px solid var(--border); padding-top: 16px; }
   </style>
 </head>
@@ -74,6 +88,58 @@
     traces, screenshots and videos for every run.
   </p>
 
+  <section class="latest" aria-labelledby="latest-title">
+    <h2 id="latest-title">Latest E2E run</h2>
+    <p class="verdict" id="latest-verdict" role="status" aria-atomic="true">Loading the latest run...</p>
+    <div class="table-scroll">
+      <table id="latest-table" hidden>
+        <caption class="meta" style="caption-side: bottom; text-align: left">Final attempt of each browser job.</caption>
+        <thead><tr><th scope="col">Browser</th><th scope="col" class="num">Passed</th><th scope="col" class="num">Failed</th><th scope="col" class="num">Total</th><th scope="col">Report</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="meta" id="latest-meta"></p>
+    <noscript><p class="meta">Open the <a href="report/index.html">Allure report</a> for the latest results.</p></noscript>
+  </section>
+  <script>
+    (async () => {
+      const verdict = document.getElementById("latest-verdict");
+      const icon = ok => ok
+        ? '<svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 10.5l2.5 2.5L14 7.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 7l6 6M13 7l-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      try {
+        const response = await fetch("latest.json", { cache: "no-store" });
+        if (!response.ok) throw new Error(response.status);
+        const run = await response.json();
+        const passed = run.browsers.reduce((sum, b) => sum + b.passed, 0);
+        const total = run.browsers.reduce((sum, b) => sum + b.total, 0);
+        const missing = run.browsers.filter(b => b.missing).length;
+        const ok = total > 0 && passed === total && missing === 0;
+        verdict.className = "verdict " + (ok ? "pass" : "fail");
+        verdict.innerHTML = icon(ok) + "<span></span>";
+        verdict.querySelector("span").textContent = ok
+          ? `All ${total} tests passed in ${run.browsers.length} browsers`
+          : `${passed} of ${total} tests passed in ${run.browsers.length - missing} browsers` +
+            (missing ? `, ${missing} browser job${missing > 1 ? "s" : ""} produced no results` : "");
+        const body = document.querySelector("#latest-table tbody");
+        for (const b of run.browsers) {
+          const row = body.insertRow();
+          row.insertCell().textContent = b.browser + (b.attempt === "attempt-2" ? " (CI retry)" : "") + (b.missing ? " (no results)" : "");
+          for (const n of [b.passed, b.failed, b.total]) Object.assign(row.insertCell(), { className: "num", textContent: n });
+          const link = Object.assign(document.createElement("a"), { textContent: b.missing ? "CI run" : "HTML report", href: b.missing ? (run.run || "report/index.html") : (b.html || "report/index.html") });
+          row.insertCell().append(link);
+        }
+        document.getElementById("latest-table").hidden = false;
+        const meta = document.getElementById("latest-meta");
+        meta.append(`Commit ${run.commit || "unknown"}${run.branch ? " on " + run.branch : ""}, ${run.generated.replace("T", " ").replace("Z", " UTC")}. `);
+        if (run.run) meta.append(Object.assign(document.createElement("a"), { href: run.run, textContent: "CI run" }), ". ");
+        meta.append(Object.assign(document.createElement("a"), { href: "report/index.html", textContent: "Allure report (all browsers)" }), ".");
+      } catch {
+        verdict.textContent = "No run summary here: CI publishes it with the site. Open the Allure report for results.";
+      }
+    })();
+  </script>
+
   <div class="grid">
     <div class="card"><h3>Layered design</h3><p>Pages, components (Select2, data table), fixtures, config and data builders.</p></div>
     <div class="card"><h3>Three engines</h3><p>Chromium, Firefox and WebKit in a CI matrix, plus the test inside Docker.</p></div>
@@ -94,6 +160,7 @@
   </ol>
 
   <h2>Architecture</h2>
+  <p>The <a href="architecture.html">interactive architecture diagram</a> adds the CI pipeline (browser cache, install retries, quarantine, this site) and links every box to its source lines.</p>
   <div class="diagram" role="img" aria-label="Architecture: the test uses page objects, which use components; the fixture provides the browser context, logging and diagnostics; configuration and data builders feed the test; Playwright drives the Snipe-IT demo; results go to TRX, Allure and CI artifacts.">
     <svg viewBox="0 0 920 300" xmlns="http://www.w3.org/2000/svg">
       <defs>

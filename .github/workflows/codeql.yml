@@ -3,7 +3,7 @@ name: CodeQL
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, 'upgrade/**'] # release branches are verified before their PR
   schedule:
     - cron: '41 4 * * 1'
 

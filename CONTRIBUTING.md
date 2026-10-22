@@ -32,6 +32,18 @@ CI enforces all of these on every pull request. A change is ready when every che
 - Log steps through `StepAsync` and add new log messages to `Logging/Log.cs` as `[LoggerMessage]` methods.
 - Keep business actions in the UI. The REST API may only be used for read-only cross-checks.
 
+## Quarantining a flaky test
+
+Quarantine is for a test that fails intermittently for a reason outside the change under review, while its fix
+is tracked. It is not a way to turn a red run green, and a test that fails every time is a bug, not a flake.
+
+1. Open an issue with the failing run, its `failure-traces-<browser>` artifact and what you found.
+2. Mark the test `[Quarantine("<why>, issue #<n>", "<yyyy-MM-dd>")]`, at most 14 days ahead.
+3. The gating jobs run `TestCategory=E2E&TestCategory!=Quarantine`; the non-blocking `quarantine` job in
+   `e2e.yml` keeps running the test so its fix can be proven.
+4. The unit test `Every_quarantine_names_its_reason_and_has_not_expired` fails the build the day after the
+   date: fix the test and remove the attribute, or delete the test. Extending the date needs a reviewer.
+
 ## Updating the accessibility baseline
 
 The E2E test fails when a visited page shows a critical axe rule that is not in

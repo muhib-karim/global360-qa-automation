@@ -48,7 +48,7 @@ public sealed class AssetLifecycleTests : SnipeItTest
         await audit.ScanAsync("asset-page");
         await EvidenceAsync("2-asset-details");
         await StepAsync("Open the History tab", details.OpenHistoryAsync);
-        await StepAsync("Verify the History rows", () => details.VerifyHistoryAsync(asset, user, actor));
+        await StepAsync("Verify the History rows", () => details.VerifyHistoryAsync(asset, user, actor, StartedUtc));
         await EvidenceAsync("3-asset-history");
         Logger.AssetVerified(Page.Url);
 

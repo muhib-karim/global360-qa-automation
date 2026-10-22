@@ -47,12 +47,24 @@ The GIF and screenshots are produced by the `e2e (chromium)` job (artifact `read
 [38841064770](https://github.com/muhib-karim/global360-qa-automation/actions/runs/38841064770) and show only the
 public demo.
 
+### Latest E2E report
+
+Every run builds the GitHub Pages site with the latest pass counts per browser, each browser's HTML report and
+the merged Allure report. These screenshots come from the `site-screenshots` artifact of E2E run
+[39694502145](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39694502145) on
+`upgrade/v1.1.0` (15 of 15 passed in Chromium, Firefox and WebKit).
+
+| Pages homepage: latest run | Allure overview |
+| --- | --- |
+| <img src="docs/img/report-landing.jpg" alt="Pages homepage with a Latest E2E run table: chromium, firefox and webkit each 5 passed, 0 failed" width="420"> | <img src="docs/img/report-allure.jpg" alt="Allure report overview: 15 test cases, 100 percent passed" width="420"> |
+
 ## Contents
 
 - [Overview](#overview)
 - [Brief](#brief)
 - [Quick start](#quick-start)
 - [Design decisions](#design-decisions)
+- [Architecture](#architecture)
 - [Project structure](#project-structure)
 - [Configuration](#configuration)
 - [Running](#running)
@@ -180,6 +192,29 @@ already present. No credentials need to be configured: the defaults are the demo
   NUnit 5.0.0 shipped on 27 September 2026 and Allure.NUnit 2.15.0 and Playwright.NUnit 1.63.0 are built against
   NUnit 3.x, so the major upgrade is left to its own reviewed pull request.
 
+## Architecture
+
+The [interactive diagram](https://muhib-karim.github.io/global360-qa-automation/architecture.html)
+([source](docs/architecture.html), built with Archify from the code at the pinned commit, each box linked to its
+source lines) shows the test layers and the CI pipeline together:
+
+```mermaid
+flowchart LR
+  T[Push, PR, nightly] --> CI[E2E job: chromium, firefox, webkit]
+  CI --> I[install-browsers.sh: cache, 4 tries, mirror fallback]
+  I --> C[(~/.cache/ms-playwright)]
+  CI --> E[E2E tests, Quarantine excluded]
+  E --> P[Page objects + components] --> D[Snipe-IT demo]
+  P --> S[SnipeItDate: Snipe-IT formats, invariant culture]
+  E --> F[SnipeItTest fixture: context, trace, video] --> A[(TRX, Allure, traces)]
+  A --> R[Report job: Allure + build-site.py] --> G[GitHub Pages, main only]
+  CI -.-> Q[quarantine job, non-blocking]
+```
+
+A structural graph of the test project (graphify, AST only: 212 nodes, 558 edges) has the expected hubs: the
+`SnipeItTest` base fixture, then `AssetDetailsPage`, `AssetData`, `Select2` and `CreateAssetPage`. Tests talk to
+page objects and page objects to components, which is what keeps a demo change local to one page object.
+
 ## Project structure
 
 ```text
@@ -189,10 +224,12 @@ already present. No credentials need to be configured: the defaults are the demo
 │   ├── workflows/build.yml              build-and-format, unit tests, guardrails, gitleaks, docker
 │   ├── workflows/e2e.yml                browser matrix, Allure report, GitHub Pages
 │   ├── workflows/codeql.yml             CodeQL for C#
-│   ├── scripts/                         demo preflight, CI-level retry, job summary
+│   ├── scripts/                         demo preflight, CI-level retry, job summary,
+│   │                                    browser install with retries, Pages site builder
 │   ├── ISSUE_TEMPLATE/, PULL_REQUEST_TEMPLATE.md, CODEOWNERS, dependabot.yml
 ├── docs/
-│   ├── index.html                       GitHub Pages homepage
+│   ├── index.html                       GitHub Pages homepage with the latest run's pass counts
+│   ├── architecture.html                interactive architecture diagram (Archify)
 │   ├── assets/ (banner.svg, logo.svg), img/ (screenshots, demo.gif)
 │   └── verification.md                  what CI verified, with run links
 ├── tests/SnipeIt.UiTests/
@@ -201,7 +238,9 @@ already present. No credentials need to be configured: the defaults are the demo
 │   ├── Components/                      Select2.cs, BootstrapTable.cs
 │   ├── Config/TestSettings.cs           settings, overrides, host guard
 │   ├── Data/AssetData.cs                asset record, AssetDataBuilder
+│   ├── Data/SnipeItDate.cs              reads Snipe-IT display dates in every format it offers
 │   ├── Fixtures/SnipeItTest.cs          context, tracing, video, artifacts
+│   ├── Fixtures/QuarantineAttribute.cs  time-boxed quarantine for a flaky test
 │   ├── Logging/                         NUnit logger provider, log messages
 │   ├── Pages/                           Login, CreateAsset, Assets, AssetDetails
 │   ├── Tests/AssetLifecycleTests.cs     the lifecycle end-to-end test (category E2E)
@@ -212,7 +251,7 @@ already present. No credentials need to be configured: the defaults are the demo
 │   └── accessibility-baseline.json      known critical axe rules per page
 ├── Dockerfile, .dockerignore
 ├── Directory.Build.props, .editorconfig, global.json, SnipeIt.sln
-└── README.md, CONTRIBUTING.md, CHANGELOG.md, SECURITY.md
+└── README.md, CONTRIBUTING.md, CHANGELOG.md, SECURITY.md, HANDOFF.md, SKILLS_USED.md
 ```
 
 ## Configuration
@@ -277,9 +316,9 @@ Containers extension and run the Quick start `dotnet test` command. The dev cont
 
 | Workflow | Trigger | Jobs |
 | --- | --- | --- |
-| `build.yml` (Build and format) | pull request, push to `main`, manual | `build-and-format`, `gitleaks`, `docker` |
-| `e2e.yml` (E2E) | pull request, push to `main`, nightly 03:17 UTC, manual | `e2e (chromium)`, `e2e (firefox)`, `e2e (webkit)`, `Allure report`, `Publish GitHub Pages` |
-| `codeql.yml` (CodeQL) | pull request, push to `main`, weekly | `CodeQL (csharp)` |
+| `build.yml` (Build and format) | pull request, push to `main` or `upgrade/**`, manual | `build-and-format`, `gitleaks`, `docker` |
+| `e2e.yml` (E2E) | pull request, push to `main` or `upgrade/**`, nightly 03:17 UTC, manual | `e2e (chromium)`, `e2e (firefox)`, `e2e (webkit)`, `quarantine (chromium, non-blocking)`, `Allure report`, `Publish GitHub Pages` |
+| `codeql.yml` (CodeQL) | pull request, push to `main` or `upgrade/**`, weekly | `CodeQL (csharp)` |
 
 All workflows use read-only `contents` permission by default, concurrency groups, timeouts and actions pinned by
 commit SHA. Only the Pages job gets `pages: write` and `id-token: write`, and it runs only for `main` (push,
@@ -315,7 +354,11 @@ The History table (`#assetHistoryListingTable`) is a bootstrap-table. Columns ar
   - **Item**: a link to this asset's own path (the asset page URL) whose text contains the tag, the name and the
     model `Macbook Pro 13"`.
   - **`created_by`**: exactly the signed-in user's display name (read from the user menu after login).
-  - **`created_at`**: a timestamp in the demo's format, for example `Thu Oct 15, 2026 10:19PM`.
+  - **`created_at`**: parsed by `SnipeItDate` with Snipe-IT's own date and time display formats (the demo's
+    format is a shared setting: `Wed Oct 21, 2026 4:31AM` one day, `2026-10-20 04:28` the day before) and the
+    invariant culture, so the runner's locale does not matter. The value must be a server-local time of this run
+    in some real timezone (UTC-12 to UTC+14; the demo runs at UTC-4), and the two rows must be within two
+    minutes of each other. See [HANDOFF.md](HANDOFF.md) for why the earlier regex failed.
   - **`quantity`**: exactly `1`.
 - **`create new` row**: `target` is empty.
 - **`checkout` row**: `target` contains a link to `/users/<selected user id>` whose text is the selected user's
@@ -348,6 +391,18 @@ During a reset it answers HTTP 503 with a "Resetting the database" page.
   investigate, not a pass to ignore. The build job self-tests the script's three outcomes on every pull request.
   Whether a live run needed the retry is visible in its summary; [docs/verification.md](docs/verification.md)
   records it for the cited runs.
+- **Browser install.** `.github/scripts/install-browsers.sh` installs each engine with up to four attempts and
+  exponential backoff (10, 20, 40 s). Attempts 1 and 2 use Playwright's own host list; attempts 3 and 4 pin
+  `PLAYWRIGHT_DOWNLOAD_HOST` to each official Playwright host on its own (`PLAYWRIGHT_MIRRORS` can put an
+  independent mirror first). `~/.cache/ms-playwright` is cached per browser, keyed on the Playwright version in
+  `packages.lock.json`, so most runs download nothing. The build job self-tests the script offline.
+- **Failure traces.** Every failed test keeps its `trace.zip`; the E2E job also uploads them on their own as
+  `failure-traces-<browser>`, including a first attempt that the CI-level retry then passed. Open one with
+  `pwsh tests/SnipeIt.UiTests/bin/Release/net10.0/playwright.ps1 show-trace <file>`.
+- **Quarantine, time-boxed.** A test that flakes for a reason outside the change under review can be marked
+  `[Quarantine("<why>, issue #<n>", "<yyyy-MM-dd>")]`. The gating jobs and the Docker image exclude the
+  `Quarantine` category, the non-blocking `quarantine` job keeps running it, and a unit test fails the build once
+  the date has passed. Nothing is quarantined; the rules are in [CONTRIBUTING.md](CONTRIBUTING.md#quarantining-a-flaky-test).
 - **Timeouts, not sleeps.** Playwright waits up to 20 seconds per action or assertion (configurable),
   `--blame-hang-timeout 8m` stops a hung run with diagnostics, and each job has a timeout.
 
@@ -373,6 +428,9 @@ job's summary fails if the browser that actually ran differs from the matrix ent
 | `diagnostics-<browser>` | Per run: `trace.zip`, video (`.webm`), evidence screenshots (`.jpg`), `axe-<page>.json`, `run.json`, and on failure `failure.png` and `failure.html`. |
 | `readme-media` | The GIF and screenshots used in this README (Chromium job, when green). |
 | `docker-results` | TRX and artifacts from the Docker run. |
+| `failure-traces-<browser>` | Only the `trace.zip` of each failed test (any attempt), for a quick look at a flake. |
+| `pages-site` | The complete GitHub Pages site this run would publish: landing page, Allure, per-browser HTML reports, `latest.json`. |
+| `site-screenshots` | Headless Chrome screenshots of that site and of the Allure report (used in this README). |
 
 - **Job summary.** Every E2E job writes a summary with the outcome, pass/fail counts per attempt, browser and
   version, asset tag, selected user, seed, duration, API status and new critical accessibility rules. The report
@@ -380,7 +438,10 @@ job's summary fails if the browser that actually ran differs from the matrix ent
 - **Allure** is the main HTML report (Allure.NUnit 2.15.0 and Allure CLI 2.46.1). Each browser appears as its own
   test with a `browser` parameter. To open the downloaded artifact, serve it over HTTP, for example
   `python3 -m http.server -d allure-report` or `allure open allure-report`. The latest report from `main` is
-  published at [/report/](https://muhib-karim.github.io/global360-qa-automation/report/).
+  published at [/report/](https://muhib-karim.github.io/global360-qa-automation/report/), and the
+  [Pages homepage](https://muhib-karim.github.io/global360-qa-automation/) shows the pass counts per browser with
+  a link to each browser's HTML report. Every run, on any branch, builds the same site as the `pages-site`
+  artifact; only `main` deploys it.
 - **TRX** is produced by the VSTest TRX logger and can be opened in Visual Studio or any TRX viewer.
   Playwright for .NET has no built-in HTML reporter; the `.html` file is the VSTest HTML logger.
 - **Locally**, artifacts go to `tests/SnipeIt.UiTests/bin/<Configuration>/net10.0/artifacts/` and Allure results to
@@ -464,8 +525,9 @@ Dependabot proposes weekly NuGet, GitHub Actions and Docker updates; they go thr
 - The demo is shared and can change or reset at any time; a run proves the flow worked then, not that the demo
   will stay the same. Links to created assets stop working after a reset.
 - The random user is chosen from the first page of the dropdown's results, not from all users.
-- The History timestamp check matches the demo's current date format and the actor check uses the display name
-  shown in the user menu; a change to the demo's date settings would need the pattern updated.
+- The History timestamp check accepts every date and time format Snipe-IT offers today; a new format in a future
+  Snipe-IT release would need adding to `SnipeItDate`. The actor check uses the display name shown in the user
+  menu.
 - The accessibility gate only fails on new critical rules; other levels are recorded only.
 - The dev container is provided but not exercised in CI.
 - The Allure report does not keep history between runs yet.

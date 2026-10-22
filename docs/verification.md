@@ -4,6 +4,38 @@ Everything below comes from GitHub Actions logs and artifacts. Nothing here was 
 The demo is shared and resets, so the asset links in this file stop working after a reset; the runs and their
 artifacts (kept for 14 days, the Allure report for 30) are the evidence.
 
+## v1.1.0 on `upgrade/v1.1.0`
+
+Workflows run on pushes to `upgrade/**`, so every run below is on the branch itself (no pull request yet).
+"passed-on-retry" means the job's first attempt failed and the one CI-level retry passed; each of those first
+failures was investigated and fixed, see [HANDOFF.md](../HANDOFF.md#three-more-flakes-found-on-the-way).
+
+| Commit | Workflow | Run | Result |
+| --- | --- | --- | --- |
+| `6998caa` | Build and format | [39693113795](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39693113795) | red on purpose: the new `SnipeItDate` tests fail against the stub |
+| `6998caa` | E2E | [39693113645](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39693113645) | red: reproduces the nightly's History date failure (`Wed Oct 21, 2026 7:25PM`) |
+| `47b3371` | Build and format | [39693770403](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39693770403) | all 26 date test cases pass; the new quarantine test fails on purpose against its stub; `docker` E2E passed |
+| `47b3371` | E2E | [39693770413](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39693770413) | green 1: chromium and firefox passed, webkit passed-on-retry (success flash) |
+| `4d17ca3` | E2E | [39694502145](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39694502145) | green 2: chromium, firefox and webkit passed on the first attempt, browser cache restored; quarantine job and report site passed |
+| `4d17ca3` | Build and format, CodeQL | [39694502206](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39694502206), [39694502156](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39694502156) | passed |
+| `890b89e` | E2E | [39695719121](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39695719121) | green 3: firefox and webkit passed, chromium passed-on-retry (Optional Information toggle) |
+| `890b89e` | Build and format, CodeQL | [39695718990](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39695718990), [39695719113](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39695719113) | passed |
+
+| `caf2328` | E2E | [39696445347](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39696445347) | green 4: chromium, firefox and webkit passed on the first attempt (toggle fix) |
+| `caf2328` | Build and format, CodeQL | [39696445303](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39696445303), [39696445332](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39696445332) | passed |
+| `e518e82` | Build and format | [39697314643](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697314643) | red: `dotnet format` IDE1006 on a private const added with the alert fix |
+| `e518e82` | E2E, CodeQL | [39697314522](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697314522), [39697314429](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697314429) | passed; code scanning alerts #14 and #15 fixed on the branch |
+| `6976329` | E2E | [39697754166](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697754166) | green 5: chromium, firefox and webkit passed on the first attempt |
+| `6976329` | Build and format, CodeQL | [39697754086](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697754086), [39697754098](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697754098) | passed; no open code scanning alerts on the branch |
+
+Code scanning: alert #14 (`cs/xmldoc/missing-summary`, `LoginPage.SignInAsync` had a `<returns>` without a
+`<summary>`) is fixed on the branch, and a scan of every doc comment under `tests/` found no other. Alert #15
+(`cs/useless-assignment-to-local`) pointed into the regex source generator's output for two `[GeneratedRegex]`
+methods this release had added; both were replaced by plain string and CSS selector code. Alert #14 stays open on
+`main` until the merge, when CodeQL's run on `main` closes it.
+
+Later commits on the branch only update this file and the handoff note; their runs are on the branch's Actions page.
+
 ## Release v1.0.0 on `main`
 
 Tag [`v1.0.0`](https://github.com/muhib-karim/global360-qa-automation/releases/tag/v1.0.0) is commit
