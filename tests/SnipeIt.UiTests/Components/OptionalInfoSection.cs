@@ -10,16 +10,16 @@ namespace SnipeIt.UiTests.Components;
 /// </summary>
 internal sealed class OptionalInfoSection(IPage page)
 {
-    private const string OpenCaret = "#optional_info_icon.fa-caret-down";
+    private ILocator OpenCaret => page.Locator("#optional_info_icon.fa-caret-down");
 
     /// <summary>Opens the section unless it is already open, then waits until the name field shows.</summary>
     public async Task OpenAsync()
     {
         // After the load event the replay has run, or will not run.
         await page.WaitForLoadStateAsync(LoadState.Load);
-        if (await page.Locator(OpenCaret).CountAsync() == 0)
+        if (await OpenCaret.CountAsync() == 0)
             await page.Locator("#optional_info").ClickAsync();
-        await Expect(page.Locator(OpenCaret)).ToHaveCountAsync(1);
+        await Expect(OpenCaret).ToHaveCountAsync(1);
         await Expect(page.Locator("#name")).ToBeVisibleAsync();
     }
 }
