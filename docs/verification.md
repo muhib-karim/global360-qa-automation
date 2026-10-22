@@ -21,7 +21,20 @@ failures was investigated and fixed, see [HANDOFF.md](../HANDOFF.md#three-more-f
 | `890b89e` | E2E | [39695719121](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39695719121) | green 3: firefox and webkit passed, chromium passed-on-retry (Optional Information toggle) |
 | `890b89e` | Build and format, CodeQL | [39695718990](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39695718990), [39695719113](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39695719113) | passed |
 
-The runs of the final head, which adds the toggle fix and this file, are listed on the branch's Actions page.
+| `caf2328` | E2E | [39696445347](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39696445347) | green 4: chromium, firefox and webkit passed on the first attempt (toggle fix) |
+| `caf2328` | Build and format, CodeQL | [39696445303](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39696445303), [39696445332](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39696445332) | passed |
+| `e518e82` | Build and format | [39697314643](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697314643) | red: `dotnet format` IDE1006 on a private const added with the alert fix |
+| `e518e82` | E2E, CodeQL | [39697314522](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697314522), [39697314429](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697314429) | passed; code scanning alerts #14 and #15 fixed on the branch |
+| `6976329` | E2E | [39697754166](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697754166) | green 5: chromium, firefox and webkit passed on the first attempt |
+| `6976329` | Build and format, CodeQL | [39697754086](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697754086), [39697754098](https://github.com/muhib-karim/global360-qa-automation/actions/runs/39697754098) | passed; no open code scanning alerts on the branch |
+
+Code scanning: alert #14 (`cs/xmldoc/missing-summary`, `LoginPage.SignInAsync` had a `<returns>` without a
+`<summary>`) is fixed on the branch, and a scan of every doc comment under `tests/` found no other. Alert #15
+(`cs/useless-assignment-to-local`) pointed into the regex source generator's output for two `[GeneratedRegex]`
+methods this release had added; both were replaced by plain string and CSS selector code. Alert #14 stays open on
+`main` until the merge, when CodeQL's run on `main` closes it.
+
+Later commits on the branch only update this file and the handoff note; their runs are on the branch's Actions page.
 
 ## Release v1.0.0 on `main`
 
